@@ -1,0 +1,26 @@
+## generic files to ignore
+*~
+*.lock
+*.DS_Store
+*.swp
+*.out
+*~
+\#*#
+*.orig
+*.rej
+.AppleDouble
+.#*
+._*
+.idea
+.bundle
+
+# java specific
+*.class
+
+project/boot
+project/build/*
+project/plugins/*
+.idea
+*.iml
+lib_managed
+logs
