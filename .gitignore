@@ -24,3 +24,7 @@ project/plugins/*
 *.iml
 lib_managed
 logs
+emacs
+target
+project/target
+project/boot

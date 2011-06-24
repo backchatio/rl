@@ -1,0 +1,6 @@
+(
+:use-sbt t
+:project-name "rl"
+:compile-jars ("/Users/ivan/projects/mojolly/rl/project/boot/scala-2.9.0-1/lib/scala-library.jar" "/Users/ivan/.ivy2/cache/org.specs2/specs2_2.9.0-1/jars/specs2_2.9.0-1-1.4.jar" "/Users/ivan/.ivy2/cache/org.scala-tools.testing/scalacheck_2.9.0-1/jars/scalacheck_2.9.0-1-1.9.jar" "/Users/ivan/.ivy2/cache/org.scala-tools.testing/test-interface/jars/test-interface-0.5.jar" "/Users/ivan/.ivy2/cache/org.specs2/specs2-scalaz-core_2.9.0-1/jars/specs2-scalaz-core_2.9.0-1-6.0.RC2.jar" "/Users/ivan/.ivy2/cache/org.hamcrest/hamcrest-all/jars/hamcrest-all-1.1.jar" "/Users/ivan/.ivy2/cache/org.mockito/mockito-all/jars/mockito-all-1.8.5.jar" "/Users/ivan/.ivy2/cache/junit/junit/jars/junit-4.7.jar" "/Users/ivan/.ivy2/cache/org.pegdown/pegdown/jars/pegdown-1.0.1.jar" "/Users/ivan/.ivy2/cache/org.parboiled/parboiled-core/jars/parboiled-core-1.0.0.jar" "/Users/ivan/.ivy2/cache/org.parboiled/parboiled-java/jars/parboiled-java-1.0.0.jar" "/Users/ivan/.ivy2/cache/asm/asm-tree/jars/asm-tree-3.3.1.jar" "/Users/ivan/.ivy2/cache/asm/asm/jars/asm-3.3.1.jar" "/Users/ivan/.ivy2/cache/asm/asm-util/jars/asm-util-3.3.1.jar" "/Users/ivan/.ivy2/cache/asm/asm-analysis/jars/asm-analysis-3.3.1.jar")
+:class-dirs ("/Users/ivan/projects/mojolly/rl/target/scala-2.9.0.1/test-classes" "/Users/ivan/projects/mojolly/rl/target/scala-2.9.0.1/classes")
+)

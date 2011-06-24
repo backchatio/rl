@@ -1,7 +1,7 @@
 
 name := "rl"
 
-version := "0.3-SNAPSHOT"
+version := "0.0.1-SNAPSHOT"
 
 organization := "com.mojolly.url"
 
@@ -12,6 +12,7 @@ scalacOptions ++= Seq("-optimize", "-unchecked", "-deprecation", "-Xcheckinit", 
 libraryDependencies ++= Seq(
   "org.specs2" %% "specs2" % "1.4" % "test"
 )
+
 
 
 testFrameworks += new TestFramework("org.specs2.runner.SpecsFramework")
