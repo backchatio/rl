@@ -1,5 +1,7 @@
 package rl
 
+import util.parsing.combinator._
+
 sealed trait URINode
 
 object UserInfo {
@@ -74,7 +76,7 @@ object Uri {
     val alpha = "a-zA-z"
     val digit = "0-9"
     val genDelims = """:/?#\[\]@"""
-    val subDelims = """!#&'()*+,;="""
+    val subDelims = """\!\$\&\'\(\)\*\+\,\;\="""
     val reserved = genDelims + subDelims
     val unreserved = alpha + digit + "-._~"
     val pchar = unreserved + subDelims + ":@"
@@ -116,5 +118,49 @@ object Uri {
     }).orNull
   }
 
+  private val subDelimChars = "[\!\$\&'\(\)\*\+\,\;\=]".r
+  private val genDelimChars = "[\:\/\?\#\[\]\@]".r
+  private val hexDigits = Set[Char]() ++ "0123456789abcdefABCDEF".toArray
+
+  trait UriParser extends RegexParsers {
+
+    def subDelims: Parser[String] = subDelimChars
+    def genDelims: Parser[String] = genDelimChars
+    def reserved: Parser[String] = genDelims | subDelims
+    def alpha: Parser[String] = elem("alpha num", _.isLetter)
+    def digit: Parser[String] = elem("digit", _.isDigit)
+    def unreserved = alpha | digit | "-" | "." | "_" | "~"
+
+    def hexDigit: Parser[String] = elem("hex digit", hexDigits.contains(_))
+
+    def pctEncoded: Parser[String] = "%" ~ hexDigit ~ hexDigit
+
+    def pchar: Parser[String] = unreserved | pctEncoded | subDelims | ":" | "@"
+
+    def segementNzNc = rep1(unreserved | pctEncoded | subDelims | "@") ^^ { _.reduceLeft(_ + _) }
+    def segmentNz = rep1(pchar) ^^ { _.reduceLeft(_ + _) }
+    def segment = rep1(pchar) ^^ { _.reduceLeft(_ + _) }
+
+    def query = rep(pchar | "/" | "?") ^^ { l => QueryStringNode(l.reduceLeft(_ + _)) }
+    def fragment = rep(pchar | "/" | "?") ^^ { l => FragmentNode(l.reduceLeft(_ + _)) }
+
+
+  }
+  sealed trait UriAstNode
+  case class FragmentNode(value: String) extends UriAstNode
+  case class QueryStringNode(value: String) extends UriAstNode
+  case class PathNode(value: String) extends UriAstNode
+  case class UserNode(value: String) extends UriAstNode
+  case class PasswordNode(value: String) extends UriAstNode
+  case class UserInfoNode(user: UserNode, password: PasswordNode) extends UriAstNode
+  case class PortNode(value: Int) extends UriAstNode
+  case class AuthorityNode(value: String, userInfo: Option[UserInfoNode], port: Option[PortNode]) extends UriAstNode
+  case class SchemeNode(value: String) extends UriAstNode
+  case class ParsedUri(
+               scheme: Option[SchemeNode],
+               authority: Option[AuthorityNode],
+               path: Option[PathNode],
+               query: Option[QueryStringNode],
+               fragment: Option[FragmentNode]) extends UriAstNode
   
 }
