@@ -118,62 +118,53 @@ object Uri {
 
   trait UriParser extends RegexParsers {
 
-    def subDelims: Parser[String] = subDelimChars
-    def genDelims: Parser[String] = genDelimChars
+    def subDelims = subDelimChars
+    def genDelims = genDelimChars
     def reserved = genDelims | subDelims
-    def alpha: Parser[String] = """[a-zA-Z]""".r
-    def digit: Parser[String] = """\d""".r
-    def hyphen = literal("-")
-    def dot = literal(".")
-    def underscore = literal("_")
-    def tilde = literal("~")
-    def percent = literal("%")
-    def fwdSlash = literal("/")
-    def atSign = literal("@")
-    def colon = literal(":")
-    def questionMark = literal("?")
+    def alpha = """[a-zA-Z]""".r
+    def digit = """\d""".r
 
-    def unreserved = alpha | digit | hyphen | dot | underscore | tilde
-    def hexDigit: Parser[String] = hexDigits
-    def pctEncoded = percent ~ hexDigit ~ hexDigit
-    def pchar = unreserved | pctEncoded | subDelims | colon | atSign
+    def unreserved = alpha | digit | "-" | "." | "_" | "~"
+    def hexDigit = hexDigits
+    def pctEncoded = "%" ~ hexDigit ~ hexDigit ^^ { case a ~ b => a + b }
+    def pchar = unreserved | pctEncoded | subDelims | ":" | "@"
 
-    def segmentNzNc = rep1(unreserved | pctEncoded | subDelims | atSign)
-    def segmentNz = rep1(pchar)
-    def segment = rep(pchar)
+    def segmentNzNc = rep1(unreserved | pctEncoded | subDelims | "@") ^^ { _ mkString "" }
+    def segmentNz = rep1(pchar) ^^ { _ mkString "" }
+    def segment = rep(pchar) ^^ { _ mkString "" }
 
-    def query = rep(pchar | fwdSlash | questionMark) ^^ { l => QueryStringNode((l reduceLeft (_ + _.toString)).toString) }
-    def fragment = rep(pchar | fwdSlash | questionMark) ^^ { l => FragmentNode((l reduceLeft (_ + _.toString)).toString) }
+    def query = rep(pchar | "/" | "?") ^^ { l => QueryStringNode(l mkString "") }
+    def fragment = rep(pchar | "/" | "?") ^^ { l => FragmentNode(l mkString "") }
 
 
-    def pathSegments = rep("/" ~ segment)
-    def pathRootless = segmentNz ~  pathSegments
-    def pathNoScheme = segmentNzNc ~ pathSegments
-    def optPath = opt(pathRootless)
-    def pathAbsolute = "/" ~ optPath
-    def pathAbEmpty = rep("/" ~ segment)
-    def path = (pathAbEmpty | pathAbsolute | pathNoScheme | pathRootless) ^^ { a => PathNode(a.toString) }
+    def pathSegments = rep("/" ~ segment) ^^ { _ mkString "" }
+    def pathRootless = segmentNz ~ pathSegments ^^ { case a ~ b => a + b }
+    def pathNoScheme = segmentNzNc ~ pathSegments ^^ { case a ~ b => a + b }
+    def optPath = opt(pathRootless) ^^ { _ getOrElse "" }
+    def pathAbsolute = "/" ~ optPath ^^ { case a ~ b => a + b }
+    def pathAbEmpty = rep("/" ~ segment) ^^ { _ mkString "" }
+    def path = (pathAbEmpty | pathAbsolute | pathNoScheme | pathRootless) ^^ { PathNode(_) }
 
-    def regName = rep(unreserved | pctEncoded | subDelims) ^^ { _ reduceLeft (_ + _.toString) }
+    def regName = rep(unreserved | pctEncoded | subDelims) ^^ { _ mkString "" }
 
     def decOctet = """25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d""".r
 
-    def ipv4Address = decOctet ~ "." ~ decOctet ~ "." ~ decOctet ~ "." ~ decOctet
+    def ipv4Address = decOctet ~ "." ~ decOctet ~ "." ~ decOctet ~ "." ~ decOctet ^^ { case a ~ b => a + b }
     def ipv6Address = IPv6Address
-    def ipvFuturePt1 = rep1(hexDigit) ^^ { _ reduceLeft (_ + _.toString) }
-    def ipvFuturePt2 = rep1(unreserved | subDelims | ":") ^^ { _ reduceLeft ( _ + _.toString )}
+    def ipvFuturePt1 = rep1(hexDigit) ^^ { _ mkString "" }
+    def ipvFuturePt2 = rep1(unreserved | subDelims | ":") ^^ { _ mkString "" }
     def ipvFuture = "v" ~ ipvFuturePt1 ~ "." ~ ipvFuturePt2
 
-    def ipLiteral = "[" ~ (ipv6Address | ipvFuture) ~ "]"
+    def ipLiteral = "[" ~ (ipv6Address | ipvFuture) ~ "]" ^^ { case a ~ b => a + b }
 
-    def port = rep(digit) ^^ { _ reduceLeft ( _.toString + _.toString ) }
-    def optPort = opt(":" ~ port) ^^ { _ getOrElse "" }
+    def port = rep(digit) ^^ { _ mkString "" }
+    def optPort = opt(":" ~> port) ^^ { _ map (":" + _) getOrElse "" }
     def host = ipLiteral | ipv4Address | regName
-    def userinfo = rep(unreserved | pctEncoded | subDelims | ":") ^^ { _ reduceLeft (_ + _.toString) }
-    def optUserInfo = opt(userinfo ~ "@") ^^ { _ getOrElse "" }
-    def authority = optUserInfo ~ host ~ optPort
+    def userinfo = rep(unreserved | pctEncoded | subDelims | ":") ^^ { _ mkString "" }
+    def optUserInfo = opt(userinfo <~ "@") ^^ { a => a map (_ + "@") getOrElse "" }
+    def authority = optUserInfo ~ host ~ optPort ^^ { case a ~ b => a + b }
 
-    def scheme = alpha ~ (rep(alpha | digit | "+" | "-" | ".") ^^ { _ reduceLeft (_ + _.toString) })
+    def scheme = alpha ~ (rep(alpha | digit | "+" | "-" | ".") ^^ { _ mkString "" }) ^^ { case a ~ b => a + b }
     
 
   }
