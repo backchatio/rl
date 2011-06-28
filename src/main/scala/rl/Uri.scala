@@ -97,53 +97,84 @@ object Uri {
   private val UriParts = """^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?""".r
 
 
-  private[rl] def tokenize(uriString: String) = {
-    val UriParts(_, sch, _, auth, pth, _, qry, _, frag) = uriString
-    (sch, auth, pth, qry, frag)
-  }
-
   /**
    * Returns a [[rl.Uri]] object based on the parsed string. This method is very lenient and just tokenizes the string
    * to the uri parts and creates a [[rl.Uri]] object with those parts. You probably want to call validate on that
    * returned object afterwards
    *
-   * @param toParse the [[scala.String]] to parse
+   * @param uriString the [[scala.String]] to tokenize
    *
    * @return the parsed denormalized [[rl.Uri]]
    */
-  def parse(toParse: String): Uri = {
-    (toParse.toOption map { u =>
-      val (scheme, authority, path, query, fragment) = tokenize(u)
-      Uri(scheme, Authority(authority), path, query, fragment)
-    }).orNull
+
+  private[rl] def tokenize(uriString: String) = {
+    val UriParts(_, sch, _, auth, pth, _, qry, _, frag) = uriString
+    Uri(sch, Authority(auth), pth, qry, frag)
   }
 
-  private val subDelimChars = "[\!\$\&'\(\)\*\+\,\;\=]".r
-  private val genDelimChars = "[\:\/\?\#\[\]\@]".r
-  private val hexDigits = Set[Char]() ++ "0123456789abcdefABCDEF".toArray
+  private val subDelimChars = """[!$&'()*+,;=]""".r
+  private val genDelimChars = """[:/?#\[\]@]""".r
+  private val hexDigits = """[0123456789abcdefABCDEF]""".r
 
   trait UriParser extends RegexParsers {
 
     def subDelims: Parser[String] = subDelimChars
     def genDelims: Parser[String] = genDelimChars
-    def reserved: Parser[String] = genDelims | subDelims
-    def alpha: Parser[String] = elem("alpha num", _.isLetter)
-    def digit: Parser[String] = elem("digit", _.isDigit)
-    def unreserved = alpha | digit | "-" | "." | "_" | "~"
+    def reserved = genDelims | subDelims
+    def alpha: Parser[String] = """[a-zA-Z]""".r
+    def digit: Parser[String] = """\d""".r
+    def hyphen = literal("-")
+    def dot = literal(".")
+    def underscore = literal("_")
+    def tilde = literal("~")
+    def percent = literal("%")
+    def fwdSlash = literal("/")
+    def atSign = literal("@")
+    def colon = literal(":")
+    def questionMark = literal("?")
 
-    def hexDigit: Parser[String] = elem("hex digit", hexDigits.contains(_))
+    def unreserved = alpha | digit | hyphen | dot | underscore | tilde
+    def hexDigit: Parser[String] = hexDigits
+    def pctEncoded = percent ~ hexDigit ~ hexDigit
+    def pchar = unreserved | pctEncoded | subDelims | colon | atSign
 
-    def pctEncoded: Parser[String] = "%" ~ hexDigit ~ hexDigit
+    def segmentNzNc = rep1(unreserved | pctEncoded | subDelims | atSign)
+    def segmentNz = rep1(pchar)
+    def segment = rep(pchar)
 
-    def pchar: Parser[String] = unreserved | pctEncoded | subDelims | ":" | "@"
+    def query = rep(pchar | fwdSlash | questionMark) ^^ { l => QueryStringNode((l reduceLeft (_ + _.toString)).toString) }
+    def fragment = rep(pchar | fwdSlash | questionMark) ^^ { l => FragmentNode((l reduceLeft (_ + _.toString)).toString) }
 
-    def segementNzNc = rep1(unreserved | pctEncoded | subDelims | "@") ^^ { _.reduceLeft(_ + _) }
-    def segmentNz = rep1(pchar) ^^ { _.reduceLeft(_ + _) }
-    def segment = rep1(pchar) ^^ { _.reduceLeft(_ + _) }
 
-    def query = rep(pchar | "/" | "?") ^^ { l => QueryStringNode(l.reduceLeft(_ + _)) }
-    def fragment = rep(pchar | "/" | "?") ^^ { l => FragmentNode(l.reduceLeft(_ + _)) }
+    def pathSegments = rep("/" ~ segment)
+    def pathRootless = segmentNz ~  pathSegments
+    def pathNoScheme = segmentNzNc ~ pathSegments
+    def optPath = opt(pathRootless)
+    def pathAbsolute = "/" ~ optPath
+    def pathAbEmpty = rep("/" ~ segment)
+    def path = (pathAbEmpty | pathAbsolute | pathNoScheme | pathRootless) ^^ { a => PathNode(a.toString) }
 
+    def regName = rep(unreserved | pctEncoded | subDelims) ^^ { _ reduceLeft (_ + _.toString) }
+
+    def decOctet = """25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d""".r
+
+    def ipv4Address = decOctet ~ "." ~ decOctet ~ "." ~ decOctet ~ "." ~ decOctet
+    def ipv6Address = IPv6Address
+    def ipvFuturePt1 = rep1(hexDigit) ^^ { _ reduceLeft (_ + _.toString) }
+    def ipvFuturePt2 = rep1(unreserved | subDelims | ":") ^^ { _ reduceLeft ( _ + _.toString )}
+    def ipvFuture = "v" ~ ipvFuturePt1 ~ "." ~ ipvFuturePt2
+
+    def ipLiteral = "[" ~ (ipv6Address | ipvFuture) ~ "]"
+
+    def port = rep(digit) ^^ { _ reduceLeft ( _.toString + _.toString ) }
+    def optPort = opt(":" ~ port) ^^ { _ getOrElse "" }
+    def host = ipLiteral | ipv4Address | regName
+    def userinfo = rep(unreserved | pctEncoded | subDelims | ":") ^^ { _ reduceLeft (_ + _.toString) }
+    def optUserInfo = opt(userinfo ~ "@") ^^ { _ getOrElse "" }
+    def authority = optUserInfo ~ host ~ optPort
+
+    def scheme = alpha ~ (rep(alpha | digit | "+" | "-" | ".") ^^ { _ reduceLeft (_ + _.toString) })
+    
 
   }
   sealed trait UriAstNode
