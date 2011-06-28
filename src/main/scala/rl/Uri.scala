@@ -133,8 +133,10 @@ object Uri {
     def segmentNz = rep1(pchar) ^^ { _ mkString "" }
     def segment = rep(pchar) ^^ { _ mkString "" }
 
-    def query = rep(pchar | "/" | "?") ^^ { l => QueryStringNode(l mkString "") }
-    def fragment = rep(pchar | "/" | "?") ^^ { l => FragmentNode(l mkString "") }
+    def query = rep(pchar | "/" | "?") ^^ { _ mkString "" }
+    def queryOpt = opt("?" ~> query) ^^ { _ filter (_.isNotBlank) map ("?" + _) mkString "" }
+    def fragment = rep(pchar | "/" | "?") ^^ { _ mkString "" }
+    def fragmentOpt = opt("#" ~> fragment) ^^ { _ filter (_.isNotBlank) map ("#" + _) mkString "" }
 
 
     def pathSegments = rep("/" ~ segment) ^^ { _ mkString "" }
@@ -143,7 +145,7 @@ object Uri {
     def optPath = opt(pathRootless) ^^ { _ getOrElse "" }
     def pathAbsolute = "/" ~ optPath ^^ { case a ~ b => a + b }
     def pathAbEmpty = rep("/" ~ segment) ^^ { _ mkString "" }
-    def path = (pathAbEmpty | pathAbsolute | pathNoScheme | pathRootless) ^^ { PathNode(_) }
+    def path = pathAbEmpty | pathAbsolute | pathNoScheme | pathRootless
 
     def regName = rep(unreserved | pctEncoded | subDelims) ^^ { _ mkString "" }
 
@@ -165,8 +167,16 @@ object Uri {
     def authority = optUserInfo ~ host ~ optPort ^^ { case a ~ b => a + b }
 
     def scheme = alpha ~ (rep(alpha | digit | "+" | "-" | ".") ^^ { _ mkString "" }) ^^ { case a ~ b => a + b }
-    
 
+    def pathWithAuthority = "//" ~ authority ~ pathAbEmpty ^^ { case a ~ b => a + b }
+    def relativePart = opt(pathWithAuthority | pathAbsolute | pathNoScheme) ^^ { _ getOrElse "" }
+    def relativeRef = relativePart ~ queryOpt ~ fragmentOpt ^^ { case a ~ b => a + b }
+
+    def hierarchicalPart = opt(pathWithAuthority | pathAbsolute | pathRootless) ^^ { _ getOrElse "" }
+    def absoluteUri = scheme ~ ":" ~ hierarchicalPart ~ queryOpt ^^ { case a ~ b => a + b }
+
+    def uri = scheme ~ ":" ~ hierarchicalPart ~ queryOpt ~ fragmentOpt ^^ { case a ~ b => a + b }
+    def uriReference = uri | relativeRef
   }
   sealed trait UriAstNode
   case class FragmentNode(value: String) extends UriAstNode
