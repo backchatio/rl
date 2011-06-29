@@ -2,9 +2,6 @@ package rl
 
 import util.parsing.combinator._
 import java.net.IDN
-import java.io.StringWriter
-import collection.mutable.ListBuffer
-import annotation.tailrec
 
 sealed trait URINode
 
@@ -80,7 +77,7 @@ object Uri {
    * The regex to split a URI up into its parts for further processing
    * Source: http://tools.ietf.org/html/rfc3986#appendix-B
    */
-  private val UriParts = """^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?""".r
+  val UriParts = """^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?""".r
 
 
   /**
@@ -90,7 +87,7 @@ object Uri {
    *
    * @param uriString the [[scala.String]] to tokenize
    *
-   * @return the parsed denormalized [[rl.Uri]]
+   * @return the parsed unnormalized [[rl.Uri]]
    */
 
   private[rl] def tokenize(uriString: String) = {
@@ -102,14 +99,9 @@ object Uri {
   private val genDelimChars = """[:/?#\[\]@]""".r
   private val hexDigits = """[0123456789abcdefABCDEF]""".r
 
-  // TODO: replace this thing with a proper ipv6 parser
   val IPv6AddressRegex =
     ("""(?iu)^(((?=(?>.*?::)(?!.*::)))(::)?([0-9A-F]{1,4}::?){0,5}|([0-9A-F]{1,4}:){6})(\2([0-9A-F]{1,4}(::?|$)){0,2}""" +
         """|((25[0-5]|(2[0-4]|1[0-9]|[1-9])?[0-9])(\.|$)){4}|[0-9A-F]{1,4}:[0-9A-F]{1,4})(?<![^:]:)(?<!\.)\z""").r
-
-  val IPv6AddressLiteralRegex =
-    ("""(?iu)^\[(((?=(?>.*?::)(?!.*::)))(::)?([0-9A-F]{1,4}::?){0,5}|([0-9A-F]{1,4}:){6})(\2([0-9A-F]{1,4}(::?|$)){0,2}""" +
-        """|((25[0-5]|(2[0-4]|1[0-9]|[1-9])?[0-9])(\.|$)){4}|[0-9A-F]{1,4}:[0-9A-F]{1,4})(?<![^:]:)(?<!\.)\z\]""").r
 
 
   private[rl] trait UriParser extends RegexParsers {
@@ -132,11 +124,17 @@ object Uri {
     def query = rep(pchar | "/" | "?") ^^ { q =>
       (q mkString "").toOption map (QueryStringNode(_)) getOrElse EmptyQueryStringNode
     }
-    def queryOpt = opt("?" ~> query)
+    def queryOpt = opt("?" ~> query) ^^ {
+      case Some(EmptyQueryStringNode) => None
+      case m => m
+    }
     def fragment = rep(pchar | "/" | "?") ^^ { l =>
       (l mkString "").toOption map (FragmentNode(_)) getOrElse EmptyFragmentNode
     }
-    def fragmentOpt = opt("#" ~> fragment)
+    def fragmentOpt = opt("#" ~> fragment) ^^ {
+      case Some(EmptyFragmentNode) => None
+      case m => m
+    }
 
 
     def pathSegments = rep("/" ~ segment) ^^ { _ mkString "" }
@@ -158,13 +156,31 @@ object Uri {
       }
     }
 
-    def h16 = uptoN(1, 4, hexDigit) ^^ { _ mkString "" }
+    def h16_2 = repN(2, hexDigit)
+    def h16_3 = repN(3, hexDigit)
+    def h16_4 = repN(4, hexDigit)
+    def h16_multi = (h16_2 ||| h16_3 ||| h16_4) ^^ { _ mkString "" }
+    def h16 = hexDigit ||| h16_multi
+
     def h16Colon = h16 ~ ":" ^^ { case a ~ b => a + b }
-    def ls32 = (h16Colon ~ h16 ^^ { case a ~ b => a + b } ) | ipv4Address
-    def h16ColonN(max: Int) = uptoN(1, max, h16Colon) ^^ { _ mkString "" }
+    def h16Colon_2 = repN(2, h16Colon)
+    def h16Colon_3 = repN(3, h16Colon)
+    def h16Colon_4 = repN(4, h16Colon)
+    def h16Colon_5 = repN(5, h16Colon)
+    def h16Colon_6 = repN(6, h16Colon)
+    def h16ColonN(max: Int) = max match {
+      case 6 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3 ||| h16Colon_4 ||| h16Colon_5 ||| h16Colon_6) ^^ { _ mkString "" })
+      case 5 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3 ||| h16Colon_4 ||| h16Colon_5) ^^ { _ mkString "" })
+      case 4 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3 ||| h16Colon_4) ^^ { _ mkString "" })
+      case 3 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3) ^^ { _ mkString "" })
+      case 2 => h16Colon ||| (h16Colon_2 ^^ { _ mkString "" })
+      case 1 => h16Colon
+    }
     def h16Colonh16N(max: Int) = h16ColonN(max) ~ h16 ^^ { case a ~ b => a + b }
     def flatOpt(parser: => Parser[String]): Parser[String] = opt(parser) ^^ { _ getOrElse  ""}
     def nH16Colon(n: Int) = repN(n, h16Colon) ^^ { _ mkString "" }
+
+    def ls32 = (h16Colon ~ h16 ^^ { case a ~ b => a + b } ) | ipv4Address
 
     def ip6_1 = nH16Colon(6) ~ ls32 ^^ { case a ~ b => a + b }
     def ip6_2 = "::" ~ nH16Colon(6) ~ ls32 ^^ { case a ~ b ~ c => a + b + c }
@@ -202,7 +218,9 @@ object Uri {
       }
     }
 
-    def ipv6Address = (ip6_1 | ip6_2 | ip6_3 | ip6_4 | ip6_5 | ip6_6 | ip6_7 | ip6_8 | ip6_9) ^^ { IPv6AddressNode(_) }
+    def ipv6Address = {
+      (ip6_1 ||| ip6_2 ||| ip6_3 ||| ip6_4 ||| ip6_5 ||| ip6_6 ||| ip6_7 ||| ip6_8 ||| ip6_9) ^^ { IPv6AddressNode(_) }
+    }
     def ipv6Literal = "[" ~> ipv6Address <~ "]"
     def ipvFuturePt1 = "v" ~> rep1(hexDigit) <~ "." ^^ { _ mkString "" }
     def ipvFuturePt2 = rep1(unreserved | subDelims | ":") ^^ { _ mkString "" }
@@ -231,31 +249,6 @@ object Uri {
 //
 //    def uri = scheme ~ ":" ~ hierarchicalPart ~ queryOpt ~ fragmentOpt ^^ { case a ~ b => a + b }
 //    def uriReference = uri | relativeRef
-
-  /** A parser generator for a specified number of repetitions.
-   *
-   *  `uptoN(n, p)` uses `p` upto `n` time to parse the input
-   *  (the result is a `List` of the `n` consecutive results of `p`).
-   *
-   * @param p a `Parser` that is to be applied successively to the input
-   * @param n the maximum number of times `p` can succeed
-   * @return A parser that returns a list of results produced by repeatedly applying `p` to the input
-   *        (and that only succeeds if `p` matches exactly `n` times).
-   */
-  def uptoN[T](min: Int, max: Int, p: => Parser[T]): Parser[List[T]] =
-    if (max == 0) success(Nil) else Parser { in =>
-      val elems = new ListBuffer[T]
-      val p0 = p    // avoid repeatedly re-evaluating by-name parser
-
-      @tailrec def applyp(in0: Input): ParseResult[List[T]] =
-        if (elems.length >= min && elems.length <= max) Success(elems.toList, in0)
-        else p0(in0) match {
-          case Success(x, rest)   => elems += x ; applyp(rest)
-          case ns: NoSuccess      => return ns
-        }
-
-      applyp(in)
-    }
   }
 
   private[rl] object UriParser extends UriParser
