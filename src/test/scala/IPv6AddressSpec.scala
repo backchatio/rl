@@ -76,12 +76,87 @@ class IPv6AddressSpec extends Specification with DataTables { def is =
     "1:2:3:4::7:8" !! true |
     "1:2:3::7:8" !! true |
     "1:2::7:8" !! true |
+    "1:2:3:4:5:6:1.2.3.4" !! true |
+    "1:2:3:4:5::1.2.3.4" !! true |
+    "1:2:3:4::1.2.3.4" !! true |
+    "1:2:3::1.2.3.4" !! true |
+    "1:2::1.2.3.4" !! true |
+    "1::1.2.3.4" !! true |
+    "1:2:3:4::5:1.2.3.4" !! true |
     "1::7:8" !! true |> { (candidate, isValid) =>
-        IPv6Address.findFirstIn(candidate).isDefined must_== isValid
+      Uri.IPv6AddressRegex.findFirstIn(candidate).isDefined must_== isValid
     }
   }
 
 /*
+ipv6test(1,"1:2:3:4::5:1.2.3.4");
+ipv6test(1,"1:2:3::5:1.2.3.4");
+ipv6test(1,"1:2::5:1.2.3.4");
+ipv6test(1,"1::5:1.2.3.4");
+ipv6test(1,"1::5:11.22.33.44");
+ipv6test(!1,"1::5:400.2.3.4");
+ipv6test(!1,"1::5:260.2.3.4");
+ipv6test(!1,"1::5:256.2.3.4");
+ipv6test(!1,"1::5:1.256.3.4");
+ipv6test(!1,"1::5:1.2.256.4");
+ipv6test(!1,"1::5:1.2.3.256");
+ipv6test(!1,"1::5:300.2.3.4");
+ipv6test(!1,"1::5:1.300.3.4");
+ipv6test(!1,"1::5:1.2.300.4");
+ipv6test(!1,"1::5:1.2.3.300");
+ipv6test(!1,"1::5:900.2.3.4");
+ipv6test(!1,"1::5:1.900.3.4");
+ipv6test(!1,"1::5:1.2.900.4");
+ipv6test(!1,"1::5:1.2.3.900");
+ipv6test(!1,"1::5:300.300.300.300");
+ipv6test(!1,"1::5:3000.30.30.30");
+ipv6test(!1,"1::400.2.3.4");
+ipv6test(!1,"1::260.2.3.4");
+ipv6test(!1,"1::256.2.3.4");
+ipv6test(!1,"1::1.256.3.4");
+ipv6test(!1,"1::1.2.256.4");
+ipv6test(!1,"1::1.2.3.256");
+ipv6test(!1,"1::300.2.3.4");
+ipv6test(!1,"1::1.300.3.4");
+ipv6test(!1,"1::1.2.300.4");
+ipv6test(!1,"1::1.2.3.300");
+ipv6test(!1,"1::900.2.3.4");
+ipv6test(!1,"1::1.900.3.4");
+ipv6test(!1,"1::1.2.900.4");
+ipv6test(!1,"1::1.2.3.900");
+ipv6test(!1,"1::300.300.300.300");
+ipv6test(!1,"1::3000.30.30.30");
+ipv6test(!1,"::400.2.3.4");
+ipv6test(!1,"::260.2.3.4");
+ipv6test(!1,"::256.2.3.4");
+ipv6test(!1,"::1.256.3.4");
+ipv6test(!1,"::1.2.256.4");
+ipv6test(!1,"::1.2.3.256");
+ipv6test(!1,"::300.2.3.4");
+ipv6test(!1,"::1.300.3.4");
+ipv6test(!1,"::1.2.300.4");
+ipv6test(!1,"::1.2.3.300");
+ipv6test(!1,"::900.2.3.4");
+ipv6test(!1,"::1.900.3.4");
+ipv6test(!1,"::1.2.900.4");
+ipv6test(!1,"::1.2.3.900");
+ipv6test(!1,"::300.300.300.300");
+ipv6test(!1,"::3000.30.30.30");
+ipv6test(1,"fe80::217:f2ff:254.7.237.98");
+ipv6test(1,"::ffff:192.168.1.26");
+ipv6test(!1,"2001:1:1:1:1:1:255Z255X255Y255");				# garbage instead of "." in IPv4
+ipv6test(!1,"::ffff:192x168.1.26");							# ditto
+ipv6test(1,"::ffff:192.168.1.1");
+ipv6test(1,"0:0:0:0:0:0:13.1.68.3");# IPv4-compatible IPv6 address, full, deprecated 
+ipv6test(1,"0:0:0:0:0:FFFF:129.144.52.38");# IPv4-mapped IPv6 address, full 
+ipv6test(1,"::13.1.68.3");# IPv4-compatible IPv6 address, compressed, deprecated 
+ipv6test(1,"::FFFF:129.144.52.38");# IPv4-mapped IPv6 address, compressed 
+ipv6test(1,"fe80:0:0:0:204:61ff:254.157.241.86");
+ipv6test(1,"fe80::204:61ff:254.157.241.86");
+ipv6test(1,"::ffff:12.34.56.78");
+ipv6test(!1,"::ffff:2.3.4");
+ipv6test(!1,"::ffff:257.1.2.3");
+ipv6test(!1,"1.2.3.4");
 
  */
 }

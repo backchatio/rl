@@ -1,6 +1,10 @@
 package rl
 
 import util.parsing.combinator._
+import java.net.IDN
+import java.io.StringWriter
+import collection.mutable.ListBuffer
+import annotation.tailrec
 
 sealed trait URINode
 
@@ -72,24 +76,6 @@ object Uri {
     "mongo" -> 27017
   )
 
-  private object PartsValidator {
-    val alpha = "a-zA-z"
-    val digit = "0-9"
-    val genDelims = """:/?#\[\]@"""
-    val subDelims = """\!\$\&\'\(\)\*\+\,\;\="""
-    val reserved = genDelims + subDelims
-    val unreserved = alpha + digit + "-._~"
-    val pchar = unreserved + subDelims + ":@"
-    val scheme = alpha + digit + "-+."
-    val authority = pchar
-    val path = pchar + "/"
-    val query = pchar + "/?"
-    val fragment = pchar + "/?"
-
-    def ri(expr: String) = "[%s]".format(expr).r
-    def re(expr: String) = "[^%s]".format(expr).r
-  }
-
   /*
    * The regex to split a URI up into its parts for further processing
    * Source: http://tools.ietf.org/html/rfc3986#appendix-B
@@ -109,14 +95,24 @@ object Uri {
 
   private[rl] def tokenize(uriString: String) = {
     val UriParts(_, sch, _, auth, pth, _, qry, _, frag) = uriString
-    Uri(sch, Authority(auth), pth, qry, frag)
+    (sch, auth, pth, qry, frag)
   }
 
   private val subDelimChars = """[!$&'()*+,;=]""".r
   private val genDelimChars = """[:/?#\[\]@]""".r
   private val hexDigits = """[0123456789abcdefABCDEF]""".r
 
-  trait UriParser extends RegexParsers {
+  // TODO: replace this thing with a proper ipv6 parser
+  val IPv6AddressRegex =
+    ("""(?iu)^(((?=(?>.*?::)(?!.*::)))(::)?([0-9A-F]{1,4}::?){0,5}|([0-9A-F]{1,4}:){6})(\2([0-9A-F]{1,4}(::?|$)){0,2}""" +
+        """|((25[0-5]|(2[0-4]|1[0-9]|[1-9])?[0-9])(\.|$)){4}|[0-9A-F]{1,4}:[0-9A-F]{1,4})(?<![^:]:)(?<!\.)\z""").r
+
+  val IPv6AddressLiteralRegex =
+    ("""(?iu)^\[(((?=(?>.*?::)(?!.*::)))(::)?([0-9A-F]{1,4}::?){0,5}|([0-9A-F]{1,4}:){6})(\2([0-9A-F]{1,4}(::?|$)){0,2}""" +
+        """|((25[0-5]|(2[0-4]|1[0-9]|[1-9])?[0-9])(\.|$)){4}|[0-9A-F]{1,4}:[0-9A-F]{1,4})(?<![^:]:)(?<!\.)\z\]""").r
+
+
+  private[rl] trait UriParser extends RegexParsers {
 
     def subDelims = subDelimChars
     def genDelims = genDelimChars
@@ -126,17 +122,21 @@ object Uri {
 
     def unreserved = alpha | digit | "-" | "." | "_" | "~"
     def hexDigit = hexDigits
-    def pctEncoded = "%" ~ hexDigit ~ hexDigit ^^ { case a ~ b => a + b }
+    def pctEncoded = "%" ~> hexDigit ~ hexDigit ^^ { case a ~ b => a + b }
     def pchar = unreserved | pctEncoded | subDelims | ":" | "@"
 
     def segmentNzNc = rep1(unreserved | pctEncoded | subDelims | "@") ^^ { _ mkString "" }
     def segmentNz = rep1(pchar) ^^ { _ mkString "" }
     def segment = rep(pchar) ^^ { _ mkString "" }
 
-    def query = rep(pchar | "/" | "?") ^^ { _ mkString "" }
-    def queryOpt = opt("?" ~> query) ^^ { _ filter (_.isNotBlank) map ("?" + _) mkString "" }
-    def fragment = rep(pchar | "/" | "?") ^^ { _ mkString "" }
-    def fragmentOpt = opt("#" ~> fragment) ^^ { _ filter (_.isNotBlank) map ("#" + _) mkString "" }
+    def query = rep(pchar | "/" | "?") ^^ { q =>
+      (q mkString "").toOption map (QueryStringNode(_)) getOrElse EmptyQueryStringNode
+    }
+    def queryOpt = opt("?" ~> query)
+    def fragment = rep(pchar | "/" | "?") ^^ { l =>
+      (l mkString "").toOption map (FragmentNode(_)) getOrElse EmptyFragmentNode
+    }
+    def fragmentOpt = opt("#" ~> fragment)
 
 
     def pathSegments = rep("/" ~ segment) ^^ { _ mkString "" }
@@ -150,49 +150,144 @@ object Uri {
     def regName = rep(unreserved | pctEncoded | subDelims) ^^ { _ mkString "" }
 
     def decOctet = """25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d""".r
+    def dottedDecOctet = decOctet <~ "."
 
-    def ipv4Address = decOctet ~ "." ~ decOctet ~ "." ~ decOctet ~ "." ~ decOctet ^^ { case a ~ b => a + b }
-    def ipv6Address = IPv6Address
-    def ipvFuturePt1 = rep1(hexDigit) ^^ { _ mkString "" }
+    def ipv4Address = dottedDecOctet ~ dottedDecOctet ~ dottedDecOctet ~ decOctet ^^ {
+      case a ~ b ~ c ~ d => {
+        IPv4AddressNode(a, b, c, d)
+      }
+    }
+
+    def h16 = uptoN(1, 4, hexDigit) ^^ { _ mkString "" }
+    def h16Colon = h16 ~ ":" ^^ { case a ~ b => a + b }
+    def ls32 = (h16Colon ~ h16 ^^ { case a ~ b => a + b } ) | ipv4Address
+    def h16ColonN(max: Int) = uptoN(1, max, h16Colon) ^^ { _ mkString "" }
+    def h16Colonh16N(max: Int) = h16ColonN(max) ~ h16 ^^ { case a ~ b => a + b }
+    def flatOpt(parser: => Parser[String]): Parser[String] = opt(parser) ^^ { _ getOrElse  ""}
+    def nH16Colon(n: Int) = repN(n, h16Colon) ^^ { _ mkString "" }
+
+    def ip6_1 = nH16Colon(6) ~ ls32 ^^ { case a ~ b => a + b }
+    def ip6_2 = "::" ~ nH16Colon(6) ~ ls32 ^^ { case a ~ b ~ c => a + b + c }
+    def ip6_3 = flatOpt(h16) ~ "::" ~ nH16Colon(4) ~ ls32 ^^ {
+      case a ~ b ~ c ~ d => a + b + c + d
+    }
+    def ip6_4 = {
+      flatOpt(h16Colonh16N(1)) ~ "::" ~ nH16Colon(3) ~ ls32 ^^ {
+        case a ~ b ~ c ~ d => a + b + c + d
+      }
+    }
+    def ip6_5 = {
+      flatOpt(h16Colonh16N(2)) ~ "::" ~ nH16Colon(2) ~ ls32 ^^ {
+        case a ~ b ~ c ~ d => a + b + c + d
+      }
+    }
+    def ip6_6 = {
+      flatOpt(h16Colonh16N(3)) ~ "::" ~ nH16Colon(1) ~ ls32 ^^ {
+        case a ~ b ~ c ~ d => a + b + c + d
+      }
+    }
+    def ip6_7 = {
+      flatOpt(h16Colonh16N(4)) ~ "::" ~ ls32 ^^ {
+        case a ~ b ~ c  => a + b + c
+      }
+    }
+    def ip6_8 = {
+      flatOpt(h16Colonh16N(5)) ~ "::" ~ h16 ^^ {
+        case a ~ b ~ c => a + b + c
+      }
+    }
+    def ip6_9 = {
+      flatOpt(h16Colonh16N(6)) ~ "::" ^^ {
+        case a ~ b => a + b
+      }
+    }
+
+    def ipv6Address = (ip6_1 | ip6_2 | ip6_3 | ip6_4 | ip6_5 | ip6_6 | ip6_7 | ip6_8 | ip6_9) ^^ { IPv6AddressNode(_) }
+    def ipv6Literal = "[" ~> ipv6Address <~ "]"
+    def ipvFuturePt1 = "v" ~> rep1(hexDigit) <~ "." ^^ { _ mkString "" }
     def ipvFuturePt2 = rep1(unreserved | subDelims | ":") ^^ { _ mkString "" }
-    def ipvFuture = "v" ~ ipvFuturePt1 ~ "." ~ ipvFuturePt2
+    def ipvFuture = ipvFuturePt1 ~ ipvFuturePt2 ^^ {
+      case a ~ b => IPvFutureAddressNode("v" + a + "." + b)
+    }
+    def ipvFutureLiteral = "[" ~> ipvFuture <~ "]"
 
-    def ipLiteral = "[" ~ (ipv6Address | ipvFuture) ~ "]" ^^ { case a ~ b => a + b }
+    def ipLiteral = ipv6Literal | ipvFutureLiteral
 
-    def port = rep(digit) ^^ { _ mkString "" }
-    def optPort = opt(":" ~> port) ^^ { _ map (":" + _) getOrElse "" }
-    def host = ipLiteral | ipv4Address | regName
-    def userinfo = rep(unreserved | pctEncoded | subDelims | ":") ^^ { _ mkString "" }
-    def optUserInfo = opt(userinfo <~ "@") ^^ { a => a map (_ + "@") getOrElse "" }
-    def authority = optUserInfo ~ host ~ optPort ^^ { case a ~ b => a + b }
+//    def port = rep(digit) ^^ { _ mkString "" }
+//    def optPort = opt(":" ~> port) ^^ { _ map (":" + _) getOrElse "" }
+//    def host = ipLiteral | ipv4Address | regName
+//    def userinfo = rep(unreserved | pctEncoded | subDelims | ":") ^^ { _ mkString "" }
+//    def optUserInfo = opt(userinfo <~ "@") ^^ { a => a map (_ + "@") getOrElse "" }
+//    def authority = optUserInfo ~ host ~ optPort ^^ { case a ~ b => a + b }
+//
+//    def scheme = alpha ~ (rep(alpha | digit | "+" | "-" | ".") ^^ { _ mkString "" }) ^^ { case a ~ b => a + b }
+//
+//    def pathWithAuthority = "//" ~ authority ~ pathAbEmpty ^^ { case a ~ b => a + b }
+//    def relativePart = opt(pathWithAuthority | pathAbsolute | pathNoScheme) ^^ { _ getOrElse "" }
+//    def relativeRef = relativePart ~ queryOpt ~ fragmentOpt ^^ { case a ~ b => a + b }
+//
+//    def hierarchicalPart = opt(pathWithAuthority | pathAbsolute | pathRootless) ^^ { _ getOrElse "" }
+//    def absoluteUri = scheme ~ ":" ~ hierarchicalPart ~ queryOpt ^^ { case a ~ b => a + b }
+//
+//    def uri = scheme ~ ":" ~ hierarchicalPart ~ queryOpt ~ fragmentOpt ^^ { case a ~ b => a + b }
+//    def uriReference = uri | relativeRef
 
-    def scheme = alpha ~ (rep(alpha | digit | "+" | "-" | ".") ^^ { _ mkString "" }) ^^ { case a ~ b => a + b }
+  /** A parser generator for a specified number of repetitions.
+   *
+   *  `uptoN(n, p)` uses `p` upto `n` time to parse the input
+   *  (the result is a `List` of the `n` consecutive results of `p`).
+   *
+   * @param p a `Parser` that is to be applied successively to the input
+   * @param n the maximum number of times `p` can succeed
+   * @return A parser that returns a list of results produced by repeatedly applying `p` to the input
+   *        (and that only succeeds if `p` matches exactly `n` times).
+   */
+  def uptoN[T](min: Int, max: Int, p: => Parser[T]): Parser[List[T]] =
+    if (max == 0) success(Nil) else Parser { in =>
+      val elems = new ListBuffer[T]
+      val p0 = p    // avoid repeatedly re-evaluating by-name parser
 
-    def pathWithAuthority = "//" ~ authority ~ pathAbEmpty ^^ { case a ~ b => a + b }
-    def relativePart = opt(pathWithAuthority | pathAbsolute | pathNoScheme) ^^ { _ getOrElse "" }
-    def relativeRef = relativePart ~ queryOpt ~ fragmentOpt ^^ { case a ~ b => a + b }
+      @tailrec def applyp(in0: Input): ParseResult[List[T]] =
+        if (elems.length >= min && elems.length <= max) Success(elems.toList, in0)
+        else p0(in0) match {
+          case Success(x, rest)   => elems += x ; applyp(rest)
+          case ns: NoSuccess      => return ns
+        }
 
-    def hierarchicalPart = opt(pathWithAuthority | pathAbsolute | pathRootless) ^^ { _ getOrElse "" }
-    def absoluteUri = scheme ~ ":" ~ hierarchicalPart ~ queryOpt ^^ { case a ~ b => a + b }
-
-    def uri = scheme ~ ":" ~ hierarchicalPart ~ queryOpt ~ fragmentOpt ^^ { case a ~ b => a + b }
-    def uriReference = uri | relativeRef
+      applyp(in)
+    }
   }
-  sealed trait UriAstNode
-  case class FragmentNode(value: String) extends UriAstNode
-  case class QueryStringNode(value: String) extends UriAstNode
-  case class PathNode(value: String) extends UriAstNode
-  case class UserNode(value: String) extends UriAstNode
-  case class PasswordNode(value: String) extends UriAstNode
-  case class UserInfoNode(user: UserNode, password: PasswordNode) extends UriAstNode
-  case class PortNode(value: Int) extends UriAstNode
-  case class AuthorityNode(value: String, userInfo: Option[UserInfoNode], port: Option[PortNode]) extends UriAstNode
-  case class SchemeNode(value: String) extends UriAstNode
-  case class ParsedUri(
-               scheme: Option[SchemeNode],
-               authority: Option[AuthorityNode],
-               path: Option[PathNode],
-               query: Option[QueryStringNode],
-               fragment: Option[FragmentNode]) extends UriAstNode
+
+  private[rl] object UriParser extends UriParser
+
+  sealed trait UriPartNode
+  case class FragmentNode(value: String) extends UriPartNode
+  case object EmptyQueryStringNode extends UriPartNode
+  case object EmptyFragmentNode extends UriPartNode
+  case class QueryStringNode(value: String) extends UriPartNode
+
+  sealed trait IPAddress extends UriPartNode
+  case class IPv4AddressNode(first: String, second: String, third: String, fourth: String) extends UriPartNode {
+    def address = {
+      "%s.%s.%s.%s".format(first, second, third, fourth)
+    }
+  }
+  sealed trait IPLiteralNode extends UriPartNode { def value: String }
+  case class IPvFutureAddressNode(value: String) extends IPLiteralNode
+  case class IPv6AddressNode(value: String) extends IPLiteralNode
+  
+
+  private def internationalize(parts: (String, String, String, String, String)) = {
+    val (sch, auth, pth, qry, frag) = parts
+    (sch, IDN.toASCII(auth), pth, qry, frag)
+  }
+
+  def apply(uriString: String, includeFragment: Boolean = true) {
+    
+    // internationalize
+    // validating parse
+    // return object model
+//    UriParser.parseAll(UriParser.uriReference, uriString)
+  }
   
 }
