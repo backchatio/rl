@@ -3,15 +3,19 @@ package tests
 
 import org.specs2.Specification
 import org.specs2.matcher.DataTables
-import org.junit.runner.notification.Failure
 
 object TestIPAddressParser extends Uri.IPv6AddressParser {
 
+  var counter = 0
   def parseAddress(addr: String, validity: String) = {
     parseAll(IPv6Address, addr) match {
       case Success(_, _) => "valid"
-      case Failure(msg, _) => {
-        if (validity == "invalid") validity else msg
+      case f@Failure(msg, _) => {
+        if (validity == "invalid") validity else {
+          counter += 1
+          println("this is failure: %s because of\n%s" format (counter, f))
+          msg
+        }
       }
     }
   }

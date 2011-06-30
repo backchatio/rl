@@ -116,8 +116,8 @@ object Uri {
     private def h16_2 = repN(2, hexDigit)
     private def h16_3 = repN(3, hexDigit)
     private def h16_4 = repN(4, hexDigit)
-    private def h16_multi = (h16_4 | h16_3 | h16_2) ^^ { _ mkString "" }
-    private def h16 = h16_multi | hexDigit
+    private def h16_multi = (h16_2 ||| h16_3 ||| h16_4) ^^ { _ mkString "" }
+    private def h16 = hexDigit ||| h16_multi
 
     private def h16Colon = h16 ~ ":" ^^ { case a ~ b => a + b }
     private def h16Colon_2 = repN(2, h16Colon)
@@ -126,11 +126,11 @@ object Uri {
     private def h16Colon_5 = repN(5, h16Colon)
     private def h16Colon_6 = repN(6, h16Colon)
     private def h16ColonN(max: Int) = max match {
-      case 6 => ((h16Colon_6 | h16Colon_5 | h16Colon_4| h16Colon_3 | h16Colon_2) ^^ { _ mkString "" }) | h16Colon
-      case 5 => ((h16Colon_5 | h16Colon_4| h16Colon_3 | h16Colon_2) ^^ { _ mkString "" }) | h16Colon
-      case 4 => ((h16Colon_4 | h16Colon_3 | h16Colon_2) ^^ { _ mkString "" }) | h16Colon
-      case 3 => ((h16Colon_3 | h16Colon_2) ^^ { _ mkString "" }) | h16Colon
-      case 2 => (h16Colon_2 ^^ { _ mkString "" }) | h16Colon
+      case 6 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3 ||| h16Colon_4 ||| h16Colon_5 ||| h16Colon_6) ^^ { _ mkString "" })
+      case 5 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3 ||| h16Colon_4 ||| h16Colon_5) ^^ { _ mkString "" })
+      case 4 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3 ||| h16Colon_4) ^^ { _ mkString "" })
+      case 3 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3) ^^ { _ mkString "" })
+      case 2 => h16Colon ||| (h16Colon_2 ^^ { _ mkString "" })
       case 1 => h16Colon
     }
     private def h16Colonh16N(max: Int) = h16ColonN(max) ~ h16 ^^ { case a ~ b => a + b }
@@ -149,7 +149,7 @@ object Uri {
     private def ip6_7 = flatOpt(h16Colonh16N(4)) ~ "::" ~ ls32 ^^ { case a ~ b ~ c  => a + b + c }
     private def ip6_8 = flatOpt(h16Colonh16N(5)) ~ "::" ~ h16 ^^ { case a ~ b ~ c => a + b + c }
     private def ip6_9 = flatOpt(h16Colonh16N(6)) ~ "::" ^^ { case a ~ b => a + b }
-    def IPv6Address = (ip6_9 | ip6_8 | ip6_7 | ip6_6 | ip6_5 | ip6_4 | ip6_3 | ip6_2 | ip6_1)
+    def IPv6Address = (ip6_1 ||| ip6_2 ||| ip6_3 ||| ip6_4 ||| ip6_5 ||| ip6_6 ||| ip6_7 ||| ip6_8 ||| ip6_9)
 
   }
 
