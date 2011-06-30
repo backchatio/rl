@@ -138,7 +138,7 @@ object Uri {
 
     private def flatOpt(parser: => Parser[String]): Parser[String] = opt(parser) ^^ { _ getOrElse  ""}
 
-    private def ls32 = (h16Colon ~ h16 ^^ { case a ~ b => a + b } ) | IPv4Address
+    private def ls32 = (h16Colon ~ h16 ^^ { case a ~ b => a + b } ) ||| IPv4Address
 
     private def ip6_1 = nH16Colon(6) ~ ls32 ^^ { case a ~ b => a + b }
     private def ip6_2 = "::" ~ nH16Colon(6) ~ ls32 ^^ { case a ~ b ~ c => a + b + c }
