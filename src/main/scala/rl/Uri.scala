@@ -120,20 +120,21 @@ object Uri {
     private def h16 = h16_multi | hexDigit
 
     private def h16Colon = h16 ~ ":" ^^ { case a ~ b => a + b }
-    private def h16Colon_2 = repN(2, h16Colon)
-    private def h16Colon_3 = repN(3, h16Colon)
-    private def h16Colon_4 = repN(4, h16Colon)
-    private def h16Colon_5 = repN(5, h16Colon)
-    private def h16Colon_6 = repN(6, h16Colon)
+    private def h16Colon_2 = h16Colon ~ h16Colon ^^ { case a ~ b => a + b }
+    private def h16Colon_3 = repN(3, h16Colon) ^^ { _ mkString "" }
+    private def h16Colon_4 = repN(4, h16Colon) ^^ { _ mkString "" }
+    private def h16Colon_5 = repN(5, h16Colon) ^^ { _ mkString "" }
+    private def h16Colon_6 = repN(6, h16Colon) ^^ { _ mkString "" }
+    private def h16Wrap(parser: Parser[String]): Parser[String] = parser ~ h16 ^^ { case a ~ b => a + b }
     private def h16ColonN(max: Int) = max match {
-      case 6 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3 ||| h16Colon_4 ||| h16Colon_5 ||| h16Colon_6) ^^ { _ mkString "" })
-      case 5 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3 ||| h16Colon_4 ||| h16Colon_5) ^^ { _ mkString "" })
-      case 4 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3 ||| h16Colon_4) ^^ { _ mkString "" })
-      case 3 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3) ^^ { _ mkString "" })
-      case 2 => h16Colon_2 ||| h16Colon
-      case 1 => h16Colon
+      case 6 => h16Wrap(h16Colon_6) | h16Wrap(h16Colon_5) | h16Wrap(h16Colon_4) | h16Wrap(h16Colon_3) | h16Wrap(h16Colon_2) | h16Wrap(h16Colon)
+      case 5 => h16Wrap(h16Colon_5) | h16Wrap(h16Colon_4) | h16Wrap(h16Colon_3) | h16Wrap(h16Colon_2) | h16Wrap(h16Colon)
+      case 4 => h16Wrap(h16Colon_4) | h16Wrap(h16Colon_3) | h16Wrap(h16Colon_2) | h16Wrap(h16Colon)
+      case 3 => h16Wrap(h16Colon_3) | h16Wrap(h16Colon_2) | h16Wrap(h16Colon)
+      case 2 => h16Wrap(h16Colon_2) | h16Wrap(h16Colon)
+      case 1 => h16Wrap(h16Colon)
     }
-    private def h16Colonh16N(max: Int) = (opt(h16ColonN(max)) ^^ { _ getOrElse "" } ) ~ h16 ^^ { case a ~ b => a + b } | h16
+    private def h16Colonh16N(max: Int) = h16ColonN(max) | h16
     private def nH16Colon(n: Int) = repN(n, h16Colon) ^^ { _ mkString "" }
 
     private def flatOpt(parser: => Parser[String]): Parser[String] = opt(parser) ^^ { _ getOrElse  ""}
