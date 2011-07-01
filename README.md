@@ -16,7 +16,7 @@ So how does this library improve on the current URL and URI implementations?
 
 ## Running the tests
 To run the tests with sbt-0.10 you have to increase the thread stack size (ie. -Xss4m).
-at this moment the ipv6 address parser still needs some work as there are about 18% failures in the test cases.
+at this moment the ipv6 address parser still needs some work as there are ±10% failures in the test cases.
 
 ## Patches
 Patches are gladly accepted from their original author. Along with any patches, please state that the patch is your original work and that you license the work to the *rl* project under the MIT License.

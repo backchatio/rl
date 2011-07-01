@@ -5,46 +5,46 @@ import java.net.IDN
 
 sealed trait URINode
 
-object UserInfo {
-  def apply(userInfo: String): Option[UserInfo] = {
-    userInfo.toOption map  { uif =>
-      val Array(user, secret) = if (uif.indexOf(":") > -1) (uif.toString split ':') else Array(uif, "")
-      UserInfo(user, secret)
-    }
-  }
-}
-case class UserInfo(user: String, secret: String) extends URINode {
-  override def toString = (user /: secret.toOption) { _ + ":" + _ }
-}
-
-object Authority {
-  def apply(authority: String): Authority = {
-    val `has @` = (authority indexOf '@') > -1
-    val Array(uif, auu) = if (`has @`) authority split '@' else Array("", authority)
-    val au = if (auu.startsWith("@")) auu substring 1 else auu
-
-    val uinf = UserInfo(uif)
-    val `has :` = au.indexOf(':') > -1
-    if (`has :`) {
-      val Array(h, port) = au split ':'
-      new Authority(uinf, h, Some(port.toInt))
-    } else new Authority(uinf, au, None)
-  }
-}
-
-case class Authority(userInfo: Option[UserInfo], host: String, port: Option[Int]) extends URINode {
-
-  override def toString = {
-//    ((userInfo map { _.toString }) :\ ((host /: port) { _ + ":" + _ })) { _ + "@" + _ }
-    (userInfo map { _.toString + "@" } getOrElse "") + host + (port map { ":" + _ } getOrElse "") //expresses intent better
-  }
-}
-case class Uri(
-    scheme: String,
-    authority: Authority,
-    path: String,
-    rawQuery: String, //actually a sorted map
-    fragment: String)
+//object UserInfo {
+//  def apply(userInfo: String): Option[UserInfo] = {
+//    userInfo.toOption map  { uif =>
+//      val Array(user, secret) = if (uif.indexOf(":") > -1) (uif.toString split ':') else Array(uif, "")
+//      UserInfo(user, secret)
+//    }
+//  }
+//}
+//case class UserInfo(user: String, secret: String) extends URINode {
+//  override def toString = (user /: secret.toOption) { _ + ":" + _ }
+//}
+//
+//object Authority {
+//  def apply(authority: String): Authority = {
+//    val `has @` = (authority indexOf '@') > -1
+//    val Array(uif, auu) = if (`has @`) authority split '@' else Array("", authority)
+//    val au = if (auu.startsWith("@")) auu substring 1 else auu
+//
+//    val uinf = UserInfo(uif)
+//    val `has :` = au.indexOf(':') > -1
+//    if (`has :`) {
+//      val Array(h, port) = au split ':'
+//      new Authority(uinf, h, Some(port.toInt))
+//    } else new Authority(uinf, au, None)
+//  }
+//}
+//
+//case class Authority(userInfo: Option[UserInfo], host: String, port: Option[Int]) extends URINode {
+//
+//  override def toString = {
+////    ((userInfo map { _.toString }) :\ ((host /: port) { _ + ":" + _ })) { _ + "@" + _ }
+//    (userInfo map { _.toString + "@" } getOrElse "") + host + (port map { ":" + _ } getOrElse "") //expresses intent better
+//  }
+//}
+//case class Uri(
+//    scheme: String,
+//    authority: Authority,
+//    path: String,
+//    rawQuery: String, //actually a sorted map
+//    fragment: String)
 
 object Uri {
 
@@ -116,8 +116,8 @@ object Uri {
     private def h16_2 = repN(2, hexDigit)
     private def h16_3 = repN(3, hexDigit)
     private def h16_4 = repN(4, hexDigit)
-    private def h16_multi = (h16_2 ||| h16_3 ||| h16_4) ^^ { _ mkString "" }
-    private def h16 = hexDigit ||| h16_multi
+    private def h16_multi = (h16_4 | h16_3 | h16_2) ^^ { _ mkString "" }
+    private def h16 = h16_multi | hexDigit
 
     private def h16Colon = h16 ~ ":" ^^ { case a ~ b => a + b }
     private def h16Colon_2 = repN(2, h16Colon)
@@ -130,18 +130,18 @@ object Uri {
       case 5 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3 ||| h16Colon_4 ||| h16Colon_5) ^^ { _ mkString "" })
       case 4 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3 ||| h16Colon_4) ^^ { _ mkString "" })
       case 3 => h16Colon ||| ((h16Colon_2 ||| h16Colon_3) ^^ { _ mkString "" })
-      case 2 => h16Colon ||| (h16Colon_2 ^^ { _ mkString "" })
+      case 2 => h16Colon_2 ||| h16Colon
       case 1 => h16Colon
     }
-    private def h16Colonh16N(max: Int) = h16ColonN(max) ~ h16 ^^ { case a ~ b => a + b }
+    private def h16Colonh16N(max: Int) = (opt(h16ColonN(max)) ^^ { _ getOrElse "" } ) ~ h16 ^^ { case a ~ b => a + b } | h16
     private def nH16Colon(n: Int) = repN(n, h16Colon) ^^ { _ mkString "" }
 
     private def flatOpt(parser: => Parser[String]): Parser[String] = opt(parser) ^^ { _ getOrElse  ""}
 
-    private def ls32 = (h16Colon ~ h16 ^^ { case a ~ b => a + b } ) ||| IPv4Address
+    private def ls32 = (h16Colon ~ h16 ^^ { case a ~ b => a + b } ) | IPv4Address
 
     private def ip6_1 = nH16Colon(6) ~ ls32 ^^ { case a ~ b => a + b }
-    private def ip6_2 = "::" ~ nH16Colon(6) ~ ls32 ^^ { case a ~ b ~ c => a + b + c }
+    private def ip6_2 = "::" ~ nH16Colon(5) ~ ls32 ^^ { case a ~ b ~ c => a + b + c }
     private def ip6_3 = flatOpt(h16) ~ "::" ~ nH16Colon(4) ~ ls32 ^^ { case a ~ b ~ c ~ d => a + b + c + d }
     private def ip6_4 = flatOpt(h16Colonh16N(1)) ~ "::" ~ nH16Colon(3) ~ ls32 ^^ { case a ~ b ~ c ~ d => a + b + c + d }
     private def ip6_5 = flatOpt(h16Colonh16N(2)) ~ "::" ~ nH16Colon(2) ~ ls32 ^^ { case a ~ b ~ c ~ d => a + b + c + d }
@@ -149,7 +149,7 @@ object Uri {
     private def ip6_7 = flatOpt(h16Colonh16N(4)) ~ "::" ~ ls32 ^^ { case a ~ b ~ c  => a + b + c }
     private def ip6_8 = flatOpt(h16Colonh16N(5)) ~ "::" ~ h16 ^^ { case a ~ b ~ c => a + b + c }
     private def ip6_9 = flatOpt(h16Colonh16N(6)) ~ "::" ^^ { case a ~ b => a + b }
-    def IPv6Address = (ip6_1 ||| ip6_2 ||| ip6_3 ||| ip6_4 ||| ip6_5 ||| ip6_6 ||| ip6_7 ||| ip6_8 ||| ip6_9)
+    def IPv6Address = ip6_1 | ip6_2 | ip6_3 | ip6_4 | ip6_5 | ip6_6 | ip6_7 | ip6_8 | ip6_9
 
   }
 

@@ -43,9 +43,7 @@ object TestParser extends Uri.UriParser {
   }
 
   def parseIPLiteral(possible: String) = {
-    val res = parseAll(ipLiteral, possible )
-    println("The result: " + res)
-    res match {
+    parseAll(ipLiteral, possible ) match {
       case Success(address, _) => address
       case _ => null
     }
@@ -63,18 +61,21 @@ class UriParserSpec extends Specification { def is =
       "get the query string value" ! { TestParser.parseQuery("?id=6") must_== QueryStringNode("id=6") } ^
       "get none when empty query string" ! { TestParser.parseQuery("?") must_== None } ^
       "get none when no querystring found" ! { TestParser.parseQuery("") must_== None } ^ p^
-    "parse an ipv4 address" ! { TestParser.parseIPv4("123.23.34.56") must_== IPv4AddressNode("123", "23", "34", "56") } ^
-    "parse an ipv6 address" ! {
-      TestParser.parseIPv6("2001:0000:1234:0000:0000:C1C0:ABCD:0876") must_== IPv6AddressNode("2001:0000:1234:0000:0000:C1C0:ABCD:0876")
-    } ^
-    "parse an ipvFuture address" ! {
-      TestParser.parseIPvFuture("v2A.dd") must_== IPvFutureAddressNode("v2A.dd")
-    } ^
-    "parse an ip Future literal" ! {
-      TestParser.parseIPLiteral("[v2A.dd]") must_== IPvFutureAddressNode("v2A.dd")
-    } ^
-    "parse an ip v6 literal" ! {
-      TestParser.parseIPLiteral("[2001:0000:1234:0000:0000:C1C0:ABCD:0876]") must_== IPv6AddressNode("2001:0000:1234:0000:0000:C1C0:ABCD:0876")
-    } ^ end
+    "when parsing ip addresses" ^
+      "parse an ipv4 address" ! { TestParser.parseIPv4("123.23.34.56") must_== IPv4AddressNode("123", "23", "34", "56") } ^
+      "parse an ipv6 address" ! {
+        TestParser.parseIPv6("2001:0000:1234:0000:0000:C1C0:ABCD:0876") must_== IPv6AddressNode("2001:0000:1234:0000:0000:C1C0:ABCD:0876")
+      } ^
+      "parse an ipvFuture address" ! {
+        TestParser.parseIPvFuture("v2A.dd") must_== IPvFutureAddressNode("v2A.dd")
+      } ^
+      "parse an ip Future literal" ! {
+        TestParser.parseIPLiteral("[v2A.dd]") must_== IPvFutureAddressNode("v2A.dd")
+      } ^
+      "parse an ip v6 literal" ! {
+        TestParser.parseIPLiteral("[2001:0000:1234:0000:0000:C1C0:ABCD:0876]") must_== IPv6AddressNode("2001:0000:1234:0000:0000:C1C0:ABCD:0876")
+      } ^ end
+
+
 
 }
