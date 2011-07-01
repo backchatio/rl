@@ -152,6 +152,7 @@ object Uri {
     private def ip6_9 = flatOpt(h16Colonh16N(6)) ~ "::" ^^ { case a ~ b => a + b }
     def IPv6Address = ip6_1 | ip6_2 | ip6_3 | ip6_4 | ip6_5 | ip6_6 | ip6_7 | ip6_8 | ip6_9
 
+    override def skipWhitespace = false
   }
 
   /**
