@@ -3,6 +3,7 @@ package tests
 
 import org.specs2.Specification
 import rl.Uri._
+import org.specs2.internal.scalaz.Success
 
 object TestParser extends Uri.UriParser {
   def parseFragment(possible: String) = {
@@ -48,6 +49,22 @@ object TestParser extends Uri.UriParser {
       case _ => null
     }
   }
+
+  def parsePath(possible: String) = {
+    parseAll(path, possible) match {
+      case Success(path, _) => path
+      case _ => null
+    }
+  }
+
+  def parseAuthority(possible: String) = {
+    parseAll(authority, possible) match {
+      case Success(auth, _) => auth
+      case _ => null
+    }
+  }
+
+
 }
 
 class UriParserSpec extends Specification { def is =
@@ -74,6 +91,83 @@ class UriParserSpec extends Specification { def is =
       } ^
       "parse an ip v6 literal" ! {
         TestParser.parseIPLiteral("[2001:0000:1234:0000:0000:C1C0:ABCD:0876]") must_== IPv6AddressNode("2001:0000:1234:0000:0000:C1C0:ABCD:0876")
+      } ^ p^
+    "when parsing paths" ^
+      "parse a relative path" ! {
+        val seg = PathSegmentNode("..") :: PathSegmentNode("..") :: PathSegmentNode("hello") :: PathSegmentNode("world.txt") :: Nil
+        TestParser.parsePath("../../hello/world.txt") must_== RelativePathNode(seg)
+      } ^
+      "parse an absolute path" ! {
+        val seg = PathSegmentNode("hello") :: PathSegmentNode("world.txt") :: Nil
+        TestParser.parsePath("/hello/world.txt") must_== AbsolutePathNode(seg)
+      } ^ p^
+    "when parsing the authority" ^
+      "parse www.example.org" ! {
+        TestParser.parseAuthority("www.example.org") must_== AuthorityNode(None, HostNode("www.example.org"), None)
+      } ^
+      "parse www.example.org:8080" ! {
+        TestParser.parseAuthority("www.example.org:8080") must_== AuthorityNode(None, HostNode("www.example.org"), Some(PortNode(8080)))
+      } ^
+      "parse tom:tim@www.example.org:8080" ! {
+        TestParser.parseAuthority("tom:tim@www.example.org:8080") must_== AuthorityNode(Some(UserInfoNode("tom:tim")), HostNode("www.example.org"), Some(PortNode(8080)))
+      } ^
+      "parse tom@www.example.org:8080" ! {
+        TestParser.parseAuthority("tom@www.example.org:8080") must_== AuthorityNode(Some(UserInfoNode("tom")), HostNode("www.example.org"), Some(PortNode(8080)))
+      } ^
+      "parse tom:tim@www.example.org" ! {
+        TestParser.parseAuthority("tom:tim@www.example.org") must_== AuthorityNode(Some(UserInfoNode("tom:tim")), HostNode("www.example.org"), None)
+      } ^
+      "parse tom@www.example.org" ! {
+        TestParser.parseAuthority("tom@www.example.org") must_== AuthorityNode(Some(UserInfoNode("tom")), HostNode("www.example.org"), None)
+      } ^ p^
+    "when parsing a full uri" ^
+      "return a failure for 'http://www.exa mple.org'" ! {
+        val res = TestParser("http://www.exa mple.org")
+        res must beAnInstanceOf[FailedUri]
+      } ^
+      "absolute uri 'http://www.example.org:8080'" ! {
+        TestParser("http://www.example.org:8080") must_== AbsoluteUriNode(
+          SchemeNode("http"),
+          Some(PathWithAuthorityNode(AuthorityNode(None, HostNode("www.example.org"), Some(PortNode(8080))), Nil)),
+          None,
+          None
+        )
+      } ^
+      "absolute uri 'http://www.example.org/hello/world.txt'" ! {
+        val seg = PathSegmentNode("hello") :: PathSegmentNode("world.txt") :: Nil
+        TestParser("http://www.example.org/hello/world.txt") must_== AbsoluteUriNode(
+          SchemeNode("http"),
+          Some(PathWithAuthorityNode(AuthorityNode(None, HostNode("www.example.org"), None), seg)),
+          None,
+          None
+        )
+      } ^
+      "absolute uri 'http://www.example.org/hello/world.txt/?id=5&part=three'" ! {
+        val seg = PathSegmentNode("hello") :: PathSegmentNode("world.txt") :: Nil
+        TestParser("http://www.example.org/hello/world.txt/?id=5&part=three") must_== AbsoluteUriNode(
+          SchemeNode("http"),
+          Some(PathWithAuthorityNode(AuthorityNode(None, HostNode("www.example.org"), None), seg)),
+          Some(QueryStringNode("id=5&part=three")),
+          None
+        )
+      } ^
+      "absolute uri 'http://www.example.org/hello/world.txt/?id=5&part=three#there-you-go'" ! {
+        val seg = PathSegmentNode("hello") :: PathSegmentNode("world.txt") :: Nil
+        TestParser("http://www.example.org/hello/world.txt/?id=5&part=three#there-you-go") must_== AbsoluteUriNode(
+          SchemeNode("http"),
+          Some(PathWithAuthorityNode(AuthorityNode(None, HostNode("www.example.org"), None), seg)),
+          Some(QueryStringNode("id=5&part=three")),
+          Some(FragmentNode("there-you-go"))
+        )
+      } ^
+      "absolute uri 'http://www.example.org/hello/world.txt/#here-we-are'" ! {
+        val seg = PathSegmentNode("hello") :: PathSegmentNode("world.txt") :: Nil
+        TestParser("http://www.example.org/hello/world.txt/#here-we-are") must_== AbsoluteUriNode(
+          SchemeNode("http"),
+          Some(PathWithAuthorityNode(AuthorityNode(None, HostNode("www.example.org"), None), seg)),
+          None,
+          Some(FragmentNode("here-we-are"))
+        )
       } ^ end
 
 
