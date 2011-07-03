@@ -2,8 +2,7 @@ package rl
 package tests
 
 import org.specs2.Specification
-import rl.Uri._
-import org.specs2.internal.scalaz.Success
+import Uri._
 
 object TestParser extends Uri.UriParser {
   def parseFragment(possible: String) = {

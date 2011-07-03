@@ -6,40 +6,42 @@ import collection.GenSeq
 
 sealed trait URINode
 
-//object UserInfo {
-//  def apply(userInfo: String): Option[UserInfo] = {
-//    userInfo.toOption map  { uif =>
-//      val Array(user, secret) = if (uif.indexOf(":") > -1) (uif.toString split ':') else Array(uif, "")
-//      UserInfo(user, secret)
-//    }
-//  }
-//}
-//case class UserInfo(user: String, secret: String) extends URINode {
-//  override def toString = (user /: secret.toOption) { _ + ":" + _ }
-//}
-//
-//object Authority {
-//  def apply(authority: String): Authority = {
-//    val `has @` = (authority indexOf '@') > -1
-//    val Array(uif, auu) = if (`has @`) authority split '@' else Array("", authority)
-//    val au = if (auu.startsWith("@")) auu substring 1 else auu
-//
-//    val uinf = UserInfo(uif)
-//    val `has :` = au.indexOf(':') > -1
-//    if (`has :`) {
-//      val Array(h, port) = au split ':'
-//      new Authority(uinf, h, Some(port.toInt))
-//    } else new Authority(uinf, au, None)
-//  }
-//}
-//
-//case class Authority(userInfo: Option[UserInfo], host: String, port: Option[Int]) extends URINode {
-//
-//  override def toString = {
-////    ((userInfo map { _.toString }) :\ ((host /: port) { _ + ":" + _ })) { _ + "@" + _ }
-//    (userInfo map { _.toString + "@" } getOrElse "") + host + (port map { ":" + _ } getOrElse "") //expresses intent better
-//  }
-//}
+
+
+object UserInfo {
+  def apply(userInfo: String): Option[UserInfo] = {
+    userInfo.toOption map  { uif =>
+      val Array(user, secret) = if (uif.indexOf(":") > -1) (uif.toString split ':') else Array(uif, "")
+      UserInfo(user, secret)
+    }
+  }
+}
+case class UserInfo(user: String, secret: String) extends URINode {
+  override def toString = (user /: secret.toOption) { _ + ":" + _ }
+}
+
+object Authority {
+  def apply(authority: String): Authority = {
+    val `has @` = (authority indexOf '@') > -1
+    val Array(uif, auu) = if (`has @`) authority split '@' else Array("", authority)
+    val au = if (auu.startsWith("@")) auu substring 1 else auu
+
+    val uinf = UserInfo(uif)
+    val `has :` = au.indexOf(':') > -1
+    if (`has :`) {
+      val Array(h, port) = au split ':'
+      new Authority(uinf, h, Some(port.toInt))
+    } else new Authority(uinf, au, None)
+  }
+}
+
+case class Authority(userInfo: Option[UserInfo], host: String, port: Option[Int]) extends URINode {
+
+  override def toString = {
+//    ((userInfo map { _.toString }) :\ ((host /: port) { _ + ":" + _ })) { _ + "@" + _ }
+    (userInfo map { _.toString + "@" } getOrElse "") + host + (port map { ":" + _ } getOrElse "") //expresses intent better
+  }
+}
 //case class Uri(
 //    scheme: String,
 //    authority: Authority,
@@ -79,22 +81,6 @@ object Uri {
    * Source: http://tools.ietf.org/html/rfc3986#appendix-B
    */
   val UriParts = """^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?""".r
-
-
-  /**
-   * Returns a [[rl.Uri]] object based on the parsed string. This method is very lenient and just tokenizes the string
-   * to the uri parts and creates a [[rl.Uri]] object with those parts. You probably want to call validate on that
-   * returned object afterwards
-   *
-   * @param uriString the [[scala.String]] to tokenize
-   *
-   * @return the parsed unnormalized [[rl.Uri]]
-   */
-
-  private[rl] def tokenize(uriString: String) = {
-    val UriParts(_, sch, _, auth, pth, _, qry, _, frag) = uriString
-    (sch, auth, pth, qry, frag)
-  }
 
   private val subDelimChars = """[!$&'()*+,;=]""".r
   private val genDelimChars = """[:/?#\[\]@]""".r
@@ -276,17 +262,57 @@ object Uri {
 
   private def internationalize(parts: (String, String, String, String, String)) = {
     val (sch, auth, pth, qry, frag) = parts
-    (sch, IDN.toASCII(auth), pth, qry, frag)
+    auth.toOption map { rawAuth =>
+      val a = Authority(rawAuth)
+      (sch, a.copy(host = IDN.toASCII(a.host)).toString, pth, qry, frag)
+    } getOrElse {
+      parts
+    }
   }
 
+  /**
+   * Returns a [[rl.Uri]] object based on the parsed string. This method is very lenient and just tokenizes the string
+   * to the uri parts and creates a [[rl.Uri]] object with those parts. You probably want to call validate on that
+   * returned object afterwards
+   *
+   * @param uriString the [[scala.String]] to tokenize
+   *
+   * @return the parsed unnormalized [[rl.Uri]]
+   */
+  private[rl] def tokenize(uriString: String) = {
+    val UriParts(_, sch, _, auth, pth, _, qry, _, frag) = uriString
+    (sch, auth, pth, qry, frag)
+  }
+
+  private val wlpExpr = """^[A-Za-z]:\\""".r
+  private val wuncpExpr = """^\\\\""".r
+  private val windowsSeparator = "\\"
+  private val unixSeparator = "/"
+
+  def normalizeWindowsPath(path: String) = {
+    if (wlpExpr.findFirstIn(path).isDefined) {
+      "file:///" + windowsToUnixPath(path)
+    } else if (wuncpExpr.findFirstIn(path).isDefined) {
+      "file:" + windowsToUnixPath(path)
+    } else windowsToUnixPath(path)
+  }
+
+  private def windowsToUnixPath(path: String) = path.replace(windowsSeparator, unixSeparator)
+
+
   def apply(uriString: String) {
-    // normalize windows path
-    // tokenize
-    // internationalize
-    // encode if invalid chars or spaces present
-    // validating parse
-    // return object model
-//    UriParser.parseAll(UriParser.uriReference, uriString)
+    val pathNormalized = normalizeWindowsPath(uriString)
+    val tokens = tokenize(pathNormalized)
+    val i13l = internationalize(tokens)
+    val toParse = if (tokens._2 != i13l._2) pathNormalized.replace(tokens._2, i13l._2) else pathNormalized
+    /*
+     * TODO: Maybe try to guess if the uri has already been percent encoded or contains invalid chars.
+     * if not percent encoded and it contains invalid chars then percent encode it.
+     */
+    UriParser(toParse) match {
+      case FailedUri(msg) => None
+      case x => Some(x)
+    }
   }
   
 }
