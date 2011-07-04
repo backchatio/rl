@@ -1,3 +1,5 @@
+import com.github.oforero.sbtformatter.SbtFormatter._
+import com.github.oforero.sbtformatter.SbtFormatterSettings._
 
 name := "rl"
 
@@ -9,11 +11,7 @@ scalaVersion := "2.9.0-1"
 
 scalacOptions ++= Seq("-optimize", "-unchecked", "-deprecation", "-Xcheckinit", "-encoding", "utf8")
 
-libraryDependencies ++= Seq(
-  "org.specs2" %% "specs2" % "1.4" % "test"
-)
-
-
+libraryDependencies += "org.specs2" %% "specs2" % "1.4" % "test"
 
 testFrameworks += new TestFramework("org.specs2.runner.SpecsFramework")
 
@@ -25,3 +23,6 @@ publishTo <<= (version) { version: String =>
   else                                   Some("releases" at nexus+"releases/")
 }
 
+seq( formatterPreferences : _*) 
+
+seq( formatterTasks : _* )
