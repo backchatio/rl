@@ -8,7 +8,7 @@ class PathNormalizationSpec extends Specification { def is =
   "Normalizing windows paths should" ^
     "convert a local path 'C:\\Windows\\Temp\\foo.txt'" ! normalizeLocalWindowsPath ^
     "convert a relative path 'Windows\\Temp\\foo.txt'" ! normalizeRelativeWindowsPath ^
-    "convert a UNC path '\\\\theserver\\theshare\\thefile.txt" ! normalizeUncWindowsPath ^ end
+    "convert a UNC path '\\\\theserver\\theshare\\thefile.txt" ! normalizeUncWindowsPath  ^ end
 
   def normalizeLocalWindowsPath = {
     Uri.normalizeWindowsPath("C:\\Windows\\Temp\\foo.txt") must_== "file:///C:/Windows/Temp/foo.txt"
@@ -20,5 +20,9 @@ class PathNormalizationSpec extends Specification { def is =
 
   def normalizeUncWindowsPath = {
     Uri.normalizeWindowsPath("\\\\theserver\\theshare\\thefile.txt") must_== "file://theserver/theshare/thefile.txt"
+  }
+
+  def normalizeSpacesInPath = {
+    Uri.normalizeWindowsPath("C:\\Windows\\Program Files\\blah.txt") must_== "file:///C:/Windows/Program%20Files/blah.txt"
   }
 }

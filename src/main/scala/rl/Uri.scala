@@ -3,6 +3,7 @@ package rl
 import util.parsing.combinator._
 import java.net.IDN
 import collection.GenSeq
+import rl.UrlCodingUtils._
 
 sealed trait URINode
 
@@ -41,6 +42,26 @@ case class Authority(userInfo: Option[UserInfo], host: String, port: Option[Int]
 //    ((userInfo map { _.toString }) :\ ((host /: port) { _ + ":" + _ })) { _ + "@" + _ }
     (userInfo map { _.toString + "@" } getOrElse "") + host + (port map { ":" + _ } getOrElse "") //expresses intent better
   }
+}
+
+trait Uri {
+  def scheme: Option[String]
+  def scheme_=(sch: String): Uri
+  def user: Option[String]
+  def user_=(user: String): Uri
+  def password: Option[String]
+  def password_=(password: String): Uri
+  def host: Option[String]
+  def host_=(host: String): Uri
+  def port: Option[Int]
+  def port_=(port: Int): Uri
+  def path: Option[String]
+  def path_=(pth: String): Uri
+  def rawQuery: Option[String]
+  def fragment: Option[String]
+  def originalUri: String
+
+  def query: Map[String, GenSeq[String]]
 }
 //case class Uri(
 //    scheme: String,
@@ -264,7 +285,8 @@ object Uri {
     val (sch, auth, pth, qry, frag) = parts
     auth.toOption map { rawAuth =>
       val a = Authority(rawAuth)
-      (sch, a.copy(host = IDN.toASCII(a.host)).toString, pth, qry, frag)
+      val h = IDN.toASCII(a.host)
+      (sch, a.copy(host = ensureUrlEncoding(h)).toString, pth, qry, frag)
     } getOrElse {
       parts
     }
@@ -286,8 +308,8 @@ object Uri {
 
   private val wlpExpr = """^[A-Za-z]:\\""".r
   private val wuncpExpr = """^\\\\""".r
-  private val windowsSeparator = "\\"
-  private val unixSeparator = "/"
+  private val windowsSeparator = "\\".intern
+  private val unixSeparator = "/".intern
 
   def normalizeWindowsPath(path: String) = {
     if (wlpExpr.findFirstIn(path).isDefined) {
@@ -300,15 +322,19 @@ object Uri {
   private def windowsToUnixPath(path: String) = path.replace(windowsSeparator, unixSeparator)
 
 
+
+  private def encodePaths(parts: (String, String, String, String, String)) = {
+    val pth = parts._3
+    parts.copy(_3 = ensureUrlEncoding(pth))
+  }
+
   def apply(uriString: String) {
     val pathNormalized = normalizeWindowsPath(uriString)
     val tokens = tokenize(pathNormalized)
     val i13l = internationalize(tokens)
-    val toParse = if (tokens._2 != i13l._2) pathNormalized.replace(tokens._2, i13l._2) else pathNormalized
-    /*
-     * TODO: Maybe try to guess if the uri has already been percent encoded or contains invalid chars.
-     * if not percent encoded and it contains invalid chars then percent encode it.
-     */
+    val withI13lHost = if (tokens._2 != i13l._2) pathNormalized.replace(tokens._2, i13l._2) else pathNormalized
+    val encodedPath = encodePaths(i13l)
+    val toParse = if (tokens._3 != encodedPath._3) withI13lHost.replace(tokens._3, encodedPath._3) else withI13lHost
     UriParser(toParse) match {
       case FailedUri(msg) => None
       case x => Some(x)
