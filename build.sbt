@@ -25,4 +25,13 @@ publishTo <<= (version) { version: String =>
 
 seq( formatterPreferences : _*) 
 
+seq( 
+	indentLocalDefs := false,
+	spaceBeforeColon := false,
+    spaceInsideBrackets := false,
+    spaceInsideParentheses := false,
+    preserveDanglingCloseParenthesis := false,
+    compactStringConcatenation := false
+) 
+
 seq( formatterTasks : _* )

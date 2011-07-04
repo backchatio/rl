@@ -7,15 +7,15 @@ trait PathUtils {
   private val windowsSeparator = "\\".intern
   private val unixSeparator = "/".intern
 
-  def normalizeWindowsPath( path: String ) = {
-    if ( wlpExpr.findFirstIn( path ).isDefined ) {
-      "file:///" + windowsToUnixPath( path )
-    } else if ( wuncpExpr.findFirstIn( path ).isDefined ) {
-      "file:" + windowsToUnixPath( path )
-    } else windowsToUnixPath( path )
+  def normalizeWindowsPath(path: String) = {
+    if (wlpExpr.findFirstIn(path).isDefined) {
+      "file:///" + windowsToUnixPath(path)
+    } else if (wuncpExpr.findFirstIn(path).isDefined) {
+      "file:" + windowsToUnixPath(path)
+    } else windowsToUnixPath(path)
   }
 
-  private def windowsToUnixPath( path: String ) = path.replace( windowsSeparator, unixSeparator )
+  private def windowsToUnixPath(path: String) = path.replace(windowsSeparator, unixSeparator)
 
 }
 
