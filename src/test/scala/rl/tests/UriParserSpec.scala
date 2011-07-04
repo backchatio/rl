@@ -133,6 +133,26 @@ class UriParserSpec extends Specification { def is =
           "http://www.example.org:8080"
         )
       } ^
+      "absolute uri 'http://www.example.org/'" ! {
+        TestParser("http://www.example.org/", "http://www.example.org/") must_== AbsoluteUri(
+          Scheme("http"),
+          Some(Authority(None, HostName("www.example.org"), None)),
+          EmptyAbsolutePath,
+          EmptyQueryString,
+          EmptyFragment,
+          "http://www.example.org/"
+        )
+      } ^
+      "absolute uri 'http://www.詹姆斯.org/'" ! {
+        Uri("http://www.詹姆斯.org/") must_== AbsoluteUri(
+          Scheme("http"),
+          Some(Authority(None, HostName("www.xn--8ws00zhy3a.org"), None)),
+          EmptyAbsolutePath,
+          EmptyQueryString,
+          EmptyFragment,
+          "http://www.詹姆斯.org/"
+        )
+      } ^
       "absolute uri 'http://www.example.org/hello/world.txt'" ! {
         TestParser("http://www.example.org/hello/world.txt", "http://www.example.org/hello/world.txt") must_== AbsoluteUri(
           Scheme("http"),
