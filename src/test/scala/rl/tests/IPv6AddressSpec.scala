@@ -8,7 +8,7 @@ object TestIPAddressParser extends Uri.IPv6AddressParser {
 
   var counter = 0
   def parseAddress(addr: String, validity: String) = {
-    parseAll(IPv6Address, addr) match {
+    parseAll(IP6Address, addr) match {
       case Success(_, _) => "valid"
       case f@Failure(msg, _) => {
         if (validity == "invalid") validity else {

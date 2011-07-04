@@ -5,8 +5,22 @@ import java.net.IDN
 import collection.GenSeq
 import rl.UrlCodingUtils._
 import rl.PathUtils._
+import java.lang.{UnsupportedOperationException, Boolean}
 
-sealed trait URINode
+sealed trait URINode {
+  def uriPart: String
+}
+
+trait UriScheme extends URINode {
+  def scheme: String
+}
+case object NoScheme extends UriScheme {
+  val scheme = ""
+  val uriPart = scheme
+}
+case class Scheme(scheme: String) extends UriScheme {
+  val uriPart = scheme.toOption map { ":" + _ } getOrElse ""
+}
 
 object UserInfo {
   def apply(userInfo: String): Option[UserInfo] = {
@@ -17,11 +31,12 @@ object UserInfo {
   }
 }
 case class UserInfo(user: String, secret: String) extends URINode {
+  val uriPart = toString + "@"
   override def toString = (user /: secret.toOption) { _ + ":" + _ }
 }
 
 object Authority {
-  def apply(authority: String): Authority = {
+  def apply(authority: String): (Option[UserInfo], String, Option[Int]) = {
     val `has @` = (authority indexOf '@') > -1
     val Array(uif, auu) = if (`has @`) authority split '@' else Array("", authority)
     val au = if (auu.startsWith("@")) auu substring 1 else auu
@@ -30,43 +45,228 @@ object Authority {
     val `has :` = au.indexOf(':') > -1
     if (`has :`) {
       val Array(h, port) = au split ':'
-      new Authority(uinf, h, Some(port.toInt))
-    } else new Authority(uinf, au, None)
+      (uinf, h, Some(port.toInt))
+    } else (uinf, au, None)
   }
 }
 
-case class Authority(userInfo: Option[UserInfo], host: String, port: Option[Int]) extends URINode {
+sealed trait UriHost extends URINode {
+  def value: String
+}
 
+case object EmptyHost extends UriHost {
+  val uriPart = ""
+
+  val value = ""
+}
+
+case class HostName(value: String) extends UriHost {
+  val uriPart = value
+}
+case class IPv4Address(value: String) extends UriHost {
+  val uriPart = value
+}
+case class IPv6Address(value: String) extends UriHost {
+  val uriPart = "[" + value + "]"
+}
+case class IPvFutureAddress(value: String) extends UriHost {
+  val uriPart = "[" + value + "]"
+}
+
+case class Authority(userInfo: Option[UserInfo], host: UriHost, port: Option[Int]) extends URINode {
+
+  val uriPart = "//" + toString
   override def toString = {
-    (userInfo map { _.toString + "@" } getOrElse "") + host + (port map { ":" + _ } getOrElse "") //expresses intent better
+    (userInfo map { _.uriPart } getOrElse "") + host.uriPart + (port map { ":" + _ } getOrElse "") //expresses intent better
   }
+}
+
+trait UriPath extends URINode {
+  def segments: GenSeq[String]
+  def isRelative: Boolean
+  def isAbsolute: Boolean
+}
+
+trait EmptyUriPath extends UriPath {
+  val segments = Nil
+}
+
+case object EmptyRelativePath extends EmptyUriPath {
+  val isAbsolute: Boolean = false
+
+  val isRelative: Boolean = true
+
+  val uriPart = ""
+}
+
+case object EmptyAbsolutePath extends EmptyUriPath {
+  val isAbsolute: Boolean = true
+
+  val isRelative: Boolean = false
+
+  val uriPart = PathUtils.unixSeparator
+}
+
+case class RelativePath(segments: GenSeq[String]) extends UriPath {
+  val isAbsolute: Boolean = false
+
+  val isRelative: Boolean = true
+
+  val uriPart = segments mkString PathUtils.unixSeparator
+}
+case class AbsolutePath(segments: GenSeq[String]) extends UriPath  {
+  val isAbsolute: Boolean = true
+
+  val isRelative: Boolean = false
+
+  val uriPart = segments mkString (PathUtils.unixSeparator, PathUtils.unixSeparator, "")
+}
+
+trait QueryString extends URINode {
+  type Value
+  def rawValue: String
+  def value: Value
+  def empty: Value
+}
+case object EmptyQueryString extends QueryString {
+
+  def empty = ""
+
+  type Value = String
+  val value = empty
+  val uriPart = empty
+  val rawValue = empty
+}
+case class StringQueryString(rawValue: String) extends QueryString {
+
+  val uriPart = "?" + rawValue.urlEncode
+  val value = rawValue.urlDecode
+
+  val empty = ""
+
+  type Value = String
+}
+case class StringSeqQueryString(rawValue: String) extends QueryString {
+  val uriPart = value.sortWith(_ >= _).map(_.urlEncode).mkString("?", "&", "")
+
+  val empty = Nil
+
+  val value: Value = rawValue.split("&").map(_.urlDecode).toList
+
+  type Value = List[String]
+}
+case class MapQueryString(rawValue: String) extends QueryString {
+  val uriPart = {
+    value map {
+      case (k, v) ⇒ v.map(s ⇒ "%s=%s".format(k.urlEncode, s.urlEncode)).mkString("&")
+    } mkString "&"
+  }
+
+  val empty = Map.empty[String, List[String]]
+
+  lazy val value = parseRaw()
+
+  private def parseRaw() = {
+    if (rawValue.indexOf('&') > -1) {
+            rawValue.split('&').foldRight(Map[String, List[String]]()) { readQsPair _ }
+          } else {
+            readQsPair(rawValue)
+          }
+  }
+  private def readQsPair(pair: String, current: Map[String, List[String]] = Map.empty) = {
+    (pair split '=' toList) map { _.urlDecode } match {
+      case item :: Nil ⇒ current + (item -> List[String]())
+      case item :: rest ⇒
+        if (!current.contains(item)) current + (item -> rest) else (current + (item -> (rest ::: current(item)).distinct))
+      case _ ⇒ current
+    }
+  }
+  type Value = Map[String, List[String]]
+}
+
+trait UriFragment extends URINode{
+  type Value
+  def rawValue: String
+  def value: Value
+}
+
+case object EmptyFragment extends UriFragment {
+  val uriPart = ""
+
+  val value = ""
+
+  val rawValue = ""
+
+  type Value = String
+}
+case class StringFragment(rawValue: String) extends UriFragment {
+  def uriPart = value.toOption map { "#" + _ } getOrElse ""
+
+  val value = rawValue
+
+  type Value = String
+}
+
+trait UriOperations {
+  def +(other: Uri): Uri
+  def normalize: Uri
+  def /(other: Uri): Uri
+}
+
+trait MonadicUri {
+
 }
 
 trait Uri {
-  def scheme: Option[String]
-  def scheme_=(sch: String): Uri
-  def user: Option[String]
-  def user_=(user: String): Uri
-  def password: Option[String]
-  def password_=(password: String): Uri
-  def host: Option[String]
-  def host_=(host: String): Uri
-  def port: Option[Int]
-  def port_=(port: Int): Uri
-  def path: Option[String]
-  def path_=(pth: String): Uri
-  def rawQuery: Option[String]
-  def fragment: Option[String]
-  def originalUri: String
+  def scheme: UriScheme
+  def authority: Option[Authority]
+  def segments: UriPath
+  def rawQuery: QueryString
+  def fragment: UriFragment
 
-  def query: Map[String, GenSeq[String]]
+  def originalUri: String
+  def isAbsolute: Boolean
+  def isRelative: Boolean
+
+  def asciiString = {
+    scheme.uriPart + authority.map(_.uriPart).getOrElse("") + segments.uriPart + rawQuery.uriPart + fragment.uriPart
+  }
 }
-//case class Uri(
-//    scheme: String,
-//    authority: Authority,
-//    path: String,
-//    rawQuery: String, //actually a sorted map
-//    fragment: String)
+
+case class AbsoluteUri(scheme: Scheme, authority: Option[Authority], segments: UriPath, rawQuery: QueryString, fragment: UriFragment, originalUri: String="") extends Uri {
+  val isAbsolute: Boolean = true
+  val isRelative: Boolean = false
+
+}
+
+case class RelativeUri(authority: Option[Authority], segments: UriPath, rawQuery: QueryString, fragment: UriFragment, originalUri: String="") extends Uri {
+  val scheme = NoScheme
+
+  val isAbsolute: Boolean = false
+  val isRelative: Boolean = true
+}
+
+case class FailedUri(msg: String, originalUri: String = "") extends Uri {
+
+  private def noop = {
+    val u = originalUri.toOption getOrElse "not set"
+    throw new UnsupportedOperationException("Parsing the uri '%s' failed with:\n%s" format (u, msg))
+  }
+
+  def fragment = noop
+
+  def rawQuery = noop
+
+  def segments = noop
+
+  def authority = noop
+
+  def scheme = noop
+
+  def isRelative = false
+
+  def isAbsolute = false
+}
 
 object Uri {
 
@@ -103,10 +303,6 @@ object Uri {
   private val subDelimChars = """[!$&'()*+,;=]""".r
   private val genDelimChars = """[:/?#\[\]@]""".r
   private val hexDigits = """[0123456789abcdefABCDEF]""".r
-
-  val IPv6AddressRegex =
-    ("""(?iu)^(((?=(?>.*?::)(?!.*::)))(::)?([0-9A-F]{1,4}::?){0,5}|([0-9A-F]{1,4}:){6})(\2([0-9A-F]{1,4}(::?|$)){0,2}""" +
-      """|((25[0-5]|(2[0-4]|1[0-9]|[1-9])?[0-9])(\.|$)){4}|[0-9A-F]{1,4}:[0-9A-F]{1,4})(?<![^:]:)(?<!\.)\z""").r
 
   trait IPv6AddressParser extends RegexParsers {
     def hexDigit = hexDigits
@@ -154,7 +350,7 @@ object Uri {
     private def ip6_7 = flatOpt(h16Colonh16N(4)) ~ "::" ~ ls32 ^^ { case a ~ b ~ c ⇒ a + b + c }
     private def ip6_8 = flatOpt(h16Colonh16N(5)) ~ "::" ~ h16 ^^ { case a ~ b ~ c ⇒ a + b + c }
     private def ip6_9 = flatOpt(h16Colonh16N(6)) ~ "::" ^^ { case a ~ b ⇒ a + b }
-    def IPv6Address = ip6_1 | ip6_2 | ip6_3 | ip6_4 | ip6_5 | ip6_6 | ip6_7 | ip6_8 | ip6_9
+    def IP6Address = ip6_1 | ip6_2 | ip6_3 | ip6_4 | ip6_5 | ip6_6 | ip6_7 | ip6_8 | ip6_9
 
     override def skipWhitespace = false
   }
@@ -173,118 +369,93 @@ object Uri {
 
     def unreserved = alpha | digit | "-" | "." | "_" | "~"
 
-    def pctEncoded = "%" ~> hexDigit ~ hexDigit ^^ { case a ~ b ⇒ a + b }
+    def pctEncoded = "%" ~ hexDigit ~ hexDigit ^^ { case a ~ b ~ c ⇒ a + b + c }
     def pchar = unreserved | pctEncoded | subDelims | ":" | "@"
 
-    def segmentNzNc = rep1(unreserved | pctEncoded | subDelims | "@") ^^ { p ⇒ PathSegmentNode(p mkString "") }
-    def segmentNz = rep1(pchar) ^^ { p ⇒ PathSegmentNode(p mkString "") }
-    def segment = rep(pchar) ^^ { p ⇒ PathSegmentNode(p mkString "") }
+    def segmentNzNc = rep1(unreserved | pctEncoded | subDelims | "@") ^^ { _ mkString "" }
+    def segmentNz = rep1(pchar) ^^ { _ mkString "" }
+    def segment = rep(pchar) ^^ { _ mkString "" }
 
     def query = rep(pchar | "/" | "?") ^^ { q ⇒
-      (q mkString "").toOption map (QueryStringNode(_))
+      ((q mkString "").toOption map { v =>
+        (v.indexOf('&') > -1, v.indexOf('=') > -1) match {
+          case (true, true) | (false, true) => MapQueryString(v)
+          case (true, false) => StringSeqQueryString(v)
+          case (false, false) => StringQueryString(v)
+        }
+      }) getOrElse EmptyQueryString
     }
-    def queryOpt = opt("?" ~> query) ^^ { _ flatMap { a ⇒ a } }
+    def queryOpt = opt("?" ~> query) ^^ { _ getOrElse EmptyQueryString }
 
     def fragment = rep(pchar | "/" | "?") ^^ { l ⇒
-      (l mkString "").toOption map (FragmentNode(_))
+      (l mkString "").toOption map (StringFragment(_)) getOrElse EmptyFragment
     }
-    def fragmentOpt = opt("#" ~> fragment) ^^ { _ flatMap { a ⇒ a } }
+    def fragmentOpt = opt("#" ~> fragment) ^^ { _ getOrElse EmptyFragment }
 
-    def pathSegments = rep("/" ~> segment) ^^ { _ filter (_.value.isNotBlank) }
+    def pathSegments = rep("/" ~> segment) ^^ { _ filter (_.isNotBlank) }
     def pathRootless = segmentNz ~ pathSegments ^^ { case a ~ b ⇒ a :: b }
-    def pathNoScheme = (segmentNzNc ~ pathSegments) ^^ { case a ~ b ⇒ RelativePathNode(a :: b) }
-    def pathAbsolute = "/" ~> pathRootless ^^ { AbsolutePathNode(_) }
-    def pathAbEmpty = opt("/" ~> pathRootless) ^^ { _ getOrElse Nil }
-    def path = pathAbsolute | pathNoScheme
+    def pathNoScheme = segmentNzNc ~ pathSegments ^^ { case a ~ b ⇒ RelativePath(a :: b) }
+    def pathAbsolute = "/" ~> pathRootless ^^ { AbsolutePath(_) }
+    def pathAbEmpty = opt("/") ^^ { _ map { _ => EmptyAbsolutePath } getOrElse EmptyRelativePath }
+    def path = pathAbsolute | pathNoScheme | pathAbEmpty
 
-    def regName = rep(unreserved | pctEncoded | subDelims) ^^ { h ⇒ HostNode(h mkString "") }
+    def regName = rep(unreserved | pctEncoded | subDelims) ^^ { h => HostName(h mkString "") }
 
     def ipv4Address = dottedDecOctet ~ dottedDecOctet ~ dottedDecOctet ~ decOctet ^^ {
-      case a ~ b ~ c ~ d ⇒ {
-        IPv4AddressNode(a, b, c, d)
-      }
+      case a ~ b ~ c ~ d ⇒ IPv4Address(a + "." + b + "." + c + "." + d)
     }
 
-    def ipv6Address = IPv6Address ^^ { IPv6AddressNode(_) }
+    def ipv6Address = IP6Address ^^ { IPv6Address(_) }
     def ipv6Literal = "[" ~> ipv6Address <~ "]"
 
     def ipvFuturePt1 = "v" ~> rep1(hexDigit) <~ "." ^^ { _ mkString "" }
     def ipvFuturePt2 = rep1(unreserved | subDelims | ":") ^^ { _ mkString "" }
     def ipvFuture = ipvFuturePt1 ~ ipvFuturePt2 ^^ {
-      case a ~ b ⇒ IPvFutureAddressNode("v" + a + "." + b)
+      case a ~ b ⇒ IPvFutureAddress("v" + a + "." + b)
     }
     def ipvFutureLiteral = "[" ~> ipvFuture <~ "]"
 
-    def ipLiteral = ipv6Literal | ipvFutureLiteral
+    def ipLiteral = ipv6Literal | ipvFutureLiteral 
 
-    def port = ":" ~> (rep(digit) ^^ { l ⇒ PortNode(l.mkString.toInt) })
+    def port = ":" ~> (rep(digit) ^^ { _.mkString.toInt })
     def host = ipLiteral | ipv4Address | regName
-    def userInfo = (rep(unreserved | pctEncoded | subDelims | ":") ^^ { l ⇒ UserInfoNode(l mkString "") }) <~ "@"
-    def authority = opt(userInfo) ~ host ~ opt(port) ^^ { case a ~ b ~ c ⇒ AuthorityNode(a, b, c) }
+    def userInfo = (rep(unreserved | pctEncoded | subDelims | ":") ^^ { u => UserInfo(u mkString "") } ) <~ "@"
+    def authority = (opt(userInfo) ^^ { _ flatMap { a => a } }) ~ host ~ opt(port) ^^ { case a ~ b ~ c ⇒ Authority(a, b, c) }
 
-    def scheme = alpha ~ (rep(alpha | digit | "+" | "-" | ".") ^^ { _ mkString "" }) <~ ":" ^^ { case a ~ b ⇒ SchemeNode(a + b) }
+    def scheme = alpha ~ (rep(alpha | digit | "+" | "-" | ".") ^^ { _ mkString "" }) <~ ":" ^^ { case a ~ b ⇒ Scheme(a + b) }
 
-    def pathWithAuthority = "//" ~> authority ~ pathAbEmpty ^^ { case a ~ b ⇒ PathWithAuthorityNode(a, b) }
-    def hierarchicalPart = opt(pathWithAuthority | pathAbsolute | pathNoScheme)
+    def pathWithAuthority = "//" ~> authority ~ path ^^ { case a ~ b ⇒ (Some(a), b) }
+    def absolutePathWithoutAuthority = pathAbsolute ^^ { (None.asInstanceOf[Option[Authority]], _) }
+    def relativePathWithoutAuthority = pathNoScheme ^^ { (None.asInstanceOf[Option[Authority]], _) }
 
-    def relativeRef = hierarchicalPart ~ queryOpt ~ fragmentOpt ^^ { case a ~ b ~ c ⇒ RelativeUriNode(a, b, c) }
-    def absoluteUri = scheme ~ hierarchicalPart ~ queryOpt ~ fragmentOpt ^^ { case a ~ b ~ c ~ d ⇒ AbsoluteUriNode(a, b, c, d) }
+    def hierarchicalPart = pathWithAuthority | absolutePathWithoutAuthority | relativePathWithoutAuthority
+
+    def relativeRef = hierarchicalPart ~ queryOpt ~ fragmentOpt ^^ { case a ~ b ~ c ⇒ RelativeUri(a._1, a._2, b, c) }
+    def absoluteUri = scheme ~ hierarchicalPart ~ queryOpt ~ fragmentOpt ^^ { case a ~ b ~ c ~ d ⇒ AbsoluteUri(a, b._1, b._2, c, d) }
 
     def uri = absoluteUri | relativeRef
 
-    def apply(toParse: String) = {
+    def apply(toParse: String, originalUri: String): Uri = {
       parseAll(uri, toParse) match {
-        case Success(node, _) ⇒ node
-        case Failure(msg, _) ⇒ FailedUri(msg)
+        case Success(node, _) ⇒ node match {
+          case m: AbsoluteUri => m.copy(originalUri = originalUri)
+          case m: RelativeUri => m.copy(originalUri = originalUri)
+        }
+        case Failure(msg, _) ⇒ FailedUri(msg, originalUri)
       }
     }
   }
 
   private[rl] object UriParser extends UriParser
 
-  private[rl] sealed trait UriPartNode
-  private[rl] case class FragmentNode(value: String) extends UriPartNode
-  private[rl] case class QueryStringNode(value: String) extends UriPartNode
-
-  private[rl] sealed trait HostNodePart extends UriPartNode
-  private[rl] sealed trait IPAddress extends HostNodePart
-  private[rl] case class IPv4AddressNode(first: String, second: String, third: String, fourth: String) extends IPAddress {
-    def address = {
-      "%s.%s.%s.%s".format(first, second, third, fourth)
-    }
-  }
-  private[rl] sealed trait IPLiteralNode extends IPAddress { def value: String }
-  private[rl] case class IPvFutureAddressNode(value: String) extends IPLiteralNode
-  private[rl] case class IPv6AddressNode(value: String) extends IPLiteralNode
-
-  private[rl] case class UserInfoNode(value: String) extends UriPartNode
-  private[rl] case class PortNode(value: Int) extends UriPartNode
-  private[rl] case class HostNode(value: String) extends HostNodePart
-  private[rl] case class AuthorityNode(userInfo: Option[UserInfoNode], host: HostNodePart, port: Option[PortNode]) extends UriPartNode
-
-  private[rl] sealed trait PathPartNodePart extends UriPartNode
-  private[rl] case class PathSegmentNode(value: String) extends PathPartNodePart
-  private[rl] sealed trait PathNodePart extends UriPartNode
-  private[rl] case class RelativePathNode(segments: GenSeq[PathSegmentNode]) extends PathNodePart
-  private[rl] case class AbsolutePathNode(segments: GenSeq[PathSegmentNode]) extends PathNodePart
-  private[rl] case class PathWithAuthorityNode(authority: AuthorityNode, path: GenSeq[PathSegmentNode]) extends PathNodePart
-
-  private[rl] case class SchemeNode(value: String) extends UriPartNode
-
-  private[rl] sealed trait UriNode
-  private[rl] case class RelativeUriNode(path: Option[PathNodePart], query: Option[QueryStringNode], fragment: Option[FragmentNode]) extends UriNode
-  private[rl] case class AbsoluteUriNode(scheme: SchemeNode, path: Option[PathNodePart], query: Option[QueryStringNode], fragment: Option[FragmentNode]) extends UriNode
-  private[rl] case class FailedUri(msg: String) extends UriNode
 
   private def internationalize(parts: (String, String, String, String, String)) = {
     val (sch, auth, pth, qry, frag) = parts
     auth.toOption map { rawAuth ⇒
-      val a = Authority(rawAuth)
-      val h = IDN.toASCII(a.host)
-      (sch, a.copy(host = ensureUrlEncoding(h)).toString, pth, qry, frag)
-    } getOrElse {
-      parts
-    }
+      val (_, a, _) = Authority(rawAuth)
+      val h = IDN.toASCII(a)
+      (sch, ensureUrlEncoding(h), pth, qry, frag)
+    } getOrElse { parts }
   }
 
   /**
@@ -306,17 +477,14 @@ object Uri {
     parts.copy(_3 = ensureUrlEncoding(pth))
   }
 
-  def apply(uriString: String) {
-    val pathNormalized = normalizeWindowsPath(uriString)
-    val tokens = tokenize(pathNormalized)
+  def apply(uriString: String) = {
+    val unixifiedPath = windowsToUnixPath(uriString)
+    val tokens = tokenize(unixifiedPath)
     val i13l = internationalize(tokens)
-    val withI13lHost = if (tokens._2 != i13l._2) pathNormalized.replace(tokens._2, i13l._2) else pathNormalized
+    val withI13lHost = if (tokens._2 != i13l._2) unixifiedPath.replace(tokens._2, i13l._2) else unixifiedPath
     val encodedPath = encodePaths(i13l)
     val toParse = if (tokens._3 != encodedPath._3) withI13lHost.replace(tokens._3, encodedPath._3) else withI13lHost
-    UriParser(toParse) match {
-      case FailedUri(msg) ⇒ None
-      case x ⇒ Some(x)
-    }
+    UriParser(toParse, uriString)
   }
 
 }
