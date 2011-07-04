@@ -16,7 +16,6 @@ object UrlCodingUtils {
   private val InvalidChars = "[^\\.a-zA-Z0-9!$&'()*+,;=:/?#\\[\\]@-_~]".r
 
   private val HexUpperCaseChars = (0 until 16) map { i => Character.toUpperCase(Character.forDigit(i, 16)) }
-  private val HexLowerCaseChars = (0 until 16) map { i => Character.forDigit(i, 16) }
 
   private[rl] val UTF_8 = "UTF-8".intern
   private[rl] val Utf8 = Charset.forName(UTF_8)
@@ -33,7 +32,7 @@ object UrlCodingUtils {
     !isUrlEncoded(string) && containsInvalidUriChars(string)
   }
 
-  def ensureUrlEncoding(string: String) = if (needsUrlEncoding(string)) UrlEncoded(string) else string
+  def ensureUrlEncoding(string: String) = if (needsUrlEncoding(string)) urlEncode(string) else string
 
   def ensureUppercasedEncodings(string: String) = {
     LowerPctEncoded.replaceAllIn(string, (_ : Match) match {
@@ -41,53 +40,49 @@ object UrlCodingUtils {
     })
   }
 
-  object UrlEncoded extends (String => String) {
-    def apply(toEncode: String) = {
-      val in = Utf8.encode(toEncode)
-      val out = CharBuffer.allocate((in.remaining() * 3).ceil.toInt)
-      while(in.hasRemaining) {
-        val b = in.get() & 0xFF
-        if (toSkip.contains(b)) {
-          out.put(b.toInt.toChar)
-        } else {
-          out.put('%')
-          out.put(HexUpperCaseChars((b >> 4) & 0xF))
-          out.put(HexUpperCaseChars(b & 0xF))
-        }
+  def urlEncode(toEncode: String) = {
+    val in = Utf8.encode(ensureUppercasedEncodings(toEncode))
+    val out = CharBuffer.allocate((in.remaining() * 3).ceil.toInt)
+    while(in.hasRemaining) {
+      val b = in.get() & 0xFF
+      if (toSkip.contains(b)) {
+        out.put(b.toInt.toChar)
+      } else {
+        out.put('%')
+        out.put(HexUpperCaseChars((b >> 4) & 0xF))
+        out.put(HexUpperCaseChars(b & 0xF))
       }
-      out.flip()
-      out.toString
     }
+    out.flip()
+    out.toString
   }
 
-  object UrlDecoded extends (String => String) {
-    def apply(toDecode: String) = {
-      val in = CharBuffer.wrap(toDecode)
-      val out = ByteBuffer.allocate(in.remaining())
-      while(in.hasRemaining) {
-        val mark = in.position()
-        val c = in.get()
-        if (c == '%') {
-          if(in.remaining() >= 2) {
-            val x = Character.digit(in.get(), 0x10)
-            val y = Character.digit(in.get(), 0x10)
-            if (x != -1 && y != -1) {
-              val oo = (x << 4) + y
-              out.put(oo.toByte)
-            } else {
-              in.position(mark)
-            }
+  def urlDecode(toDecode: String) = {
+    val in = CharBuffer.wrap(toDecode)
+    val out = ByteBuffer.allocate(in.remaining())
+    while(in.hasRemaining) {
+      val mark = in.position()
+      val c = in.get()
+      if (c == '%') {
+        if(in.remaining() >= 2) {
+          val x = Character.digit(in.get(), 0x10)
+          val y = Character.digit(in.get(), 0x10)
+          if (x != -1 && y != -1) {
+            val oo = (x << 4) + y
+            out.put(oo.toByte)
           } else {
-            in.position(in.position() - 1)
+            in.position(mark)
           }
-        } else if (c == '+') {
-          out.put(' '.toByte)
         } else {
-          out.put(c.toByte)
+          in.position(in.position() - 1)
         }
+      } else if (c == '+') {
+        out.put(' '.toByte)
+      } else {
+        out.put(c.toByte)
       }
-      out.flip()
-      Utf8.decode(out).toString
     }
+    out.flip()
+    Utf8.decode(out).toString
   }
 }
