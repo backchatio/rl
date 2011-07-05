@@ -127,7 +127,7 @@ class UriParserSpec extends Specification { def is =
         TestParser("http://www.example.org:8080", "http://www.example.org:8080") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), Some(8080))),
-          EmptyRelativePath,
+          EmptyPath,
           EmptyQueryString,
           EmptyFragment,
           "http://www.example.org:8080"
@@ -137,7 +137,7 @@ class UriParserSpec extends Specification { def is =
         TestParser("http://www.example.org/", "http://www.example.org/") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), None)),
-          EmptyAbsolutePath,
+          EmptyPath,
           EmptyQueryString,
           EmptyFragment,
           "http://www.example.org/"
@@ -147,7 +147,7 @@ class UriParserSpec extends Specification { def is =
         Uri("http://www.詹姆斯.org/") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.xn--8ws00zhy3a.org"), None)),
-          EmptyAbsolutePath,
+          EmptyPath,
           EmptyQueryString,
           EmptyFragment,
           "http://www.詹姆斯.org/"

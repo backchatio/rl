@@ -66,9 +66,9 @@ case class FailedUri(msg: String, originalUri: String = "") extends Uri {
 
   def scheme = noop
 
-  def isRelative = false
+  val isRelative: Boolean = false
 
-  def isAbsolute = false
+  val isAbsolute: Boolean = false
 }
 
 object Uri {
@@ -175,7 +175,7 @@ object Uri {
     def pathRootless = segmentNz ~ pathSegments ^^ { case a ~ b ⇒ a :: b }
     def pathNoScheme = segmentNzNc ~ pathSegments ^^ { case a ~ b ⇒ RelativePath(a :: b) }
     def pathAbsolute = "/" ~> pathRootless ^^ { AbsolutePath(_) }
-    def pathAbEmpty = opt("/") ^^ { _ map { _ ⇒ EmptyAbsolutePath } getOrElse EmptyRelativePath }
+    def pathAbEmpty = opt("/") ^^ { _ map { _ ⇒ EmptyPath } getOrElse EmptyPath }
     def path = pathAbsolute | pathNoScheme | pathAbEmpty
 
     def regName = rep(unreserved | pctEncoded | subDelims) ^^ { h ⇒ HostName(h mkString "") }

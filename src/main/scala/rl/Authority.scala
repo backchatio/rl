@@ -53,7 +53,7 @@ case class IPvFutureAddress(value: String) extends UriHost {
 
 case class Authority(userInfo: Option[UserInfo], host: UriHost, port: Option[Int]) extends UriNode {
 
-  val uriPart = "//" + toString
+  val uriPart = "//" + toString + "/"
   override def toString = {
     (userInfo map { _.uriPart } getOrElse "") + host.uriPart + (port map { ":" + _ } getOrElse "") //expresses intent better
   }

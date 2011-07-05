@@ -12,20 +12,12 @@ trait EmptyUriPath extends UriPath {
   val segments = Nil
 }
 
-case object EmptyRelativePath extends EmptyUriPath {
+case object EmptyPath extends EmptyUriPath {
   val isAbsolute: Boolean = false
 
   val isRelative: Boolean = true
 
   val uriPart = ""
-}
-
-case object EmptyAbsolutePath extends EmptyUriPath {
-  val isAbsolute: Boolean = true
-
-  val isRelative: Boolean = false
-
-  val uriPart = UriPath.unixSeparator
 }
 
 case class RelativePath(segments: GenSeq[String]) extends UriPath {
