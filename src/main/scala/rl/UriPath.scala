@@ -6,6 +6,13 @@ trait UriPath extends UriNode {
   def segments: GenSeq[String]
   def isRelative: Boolean
   def isAbsolute: Boolean
+
+  def /(path: String): Uri = /(Uri(path))
+  def /(uri: Uri): Uri = null
+
+  def merge(uri: Uri): Uri = null
+
+  def relativize(uri: Uri): Uri = null
 }
 
 trait EmptyUriPath extends UriPath {
@@ -25,16 +32,15 @@ case class RelativePath(segments: GenSeq[String]) extends UriPath {
 
   val isRelative: Boolean = true
 
-  val uriPart = segments mkString UriPath.unixSeparator
+  val uriPart = segments mkString ("", UriPath.unixSeparator, UriPath.unixSeparator)
 }
 case class AbsolutePath(segments: GenSeq[String]) extends UriPath {
   val isAbsolute: Boolean = true
 
   val isRelative: Boolean = false
 
-  val uriPart = segments mkString (UriPath.unixSeparator, UriPath.unixSeparator, "")
+  val uriPart = segments mkString ("", UriPath.unixSeparator, UriPath.unixSeparator)
 }
-
 trait PathOps {
 
   private val wlpExpr = """^[A-Za-z]:\\""".r

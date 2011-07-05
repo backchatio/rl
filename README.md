@@ -23,6 +23,63 @@ Patches are gladly accepted from their original author. Along with any patches, 
 ## License
 MIT licensed. check the [LICENSE](https://github.com/mojolly/rl/blob/master/LICENSE) file
 
+## TODO
+Make the parsers pluggable so that the scala parser combinator based one can be replaced as it's slow as.
+
+```
+git:(next) ✗ » java -server -Dfile.encoding=UTF-8 -cp ~/projects/mojolly/local/scala/lib/scala-library.jar:. rl.Benchmark
+string to encode: I'm a very long $tring with twitter://casualjim in, it
+url to parse: http://www.詹姆斯.org/path/to/somewhere/?id=45&dskafd=safla&sdkfa=sd#dksd$sdl
+java encoded: I%27m+a+very+long+%24tring+with+twitter%3A%2F%2Fcasualjim+in%2C+it
+java parsed: http://www.%E8%A9%B9%E5%A7%86%E6%96%AF.org/path/to/somewhere/?id=45&dskafd=safla&sdkfa=sd#dksd$sdl
+rl encoded: I'm%20a%20very%20long%20$tring%20with%20twitter://casualjim%20in,%20it
+rl parsed: http://www.xn--8ws00zhy3a.org//path/to/somewheresdkfa=sd&dskafd=safla&id=45#dksd$sdl
+Start url encoding bench
+Start url decoding bench
+Starting uri parsing bench
+
+Started: Tue Jul 05 13:35:34 BST 2011
+To encode 1000000 uri's
+Java took: 2445 millis
+RL took: 1882 millis
+
+To decode 1000000 uri's
+Java took: 1745 millis
+RL took: 669 millis
+
+To parse 100000 uri's
+java took: 898 millis
+rl took: 22198 millis
+
+
+
+git:(next) ✗ » scala -J-server -Dfile.encoding=UTF-8 rl.Benchmark
+string to encode: I'm a very long $tring with twitter://casualjim in, it
+url to parse: http://www.詹姆斯.org/path/to/somewhere/?id=45&dskafd=safla&sdkfa=sd#dksd$sdl
+java encoded: I%27m+a+very+long+%24tring+with+twitter%3A%2F%2Fcasualjim+in%2C+it
+java parsed: http://www.%E8%A9%B9%E5%A7%86%E6%96%AF.org/path/to/somewhere/?id=45&dskafd=safla&sdkfa=sd#dksd$sdl
+rl encoded: I'm%20a%20very%20long%20$tring%20with%20twitter://casualjim%20in,%20it
+rl parsed: http://www.xn--8ws00zhy3a.org//path/to/somewheresdkfa=sd&dskafd=safla&id=45#dksd$sdl
+Start url encoding bench
+Start url decoding bench
+Starting uri parsing bench
+
+Started: Tue Jul 05 13:37:13 BST 2011
+To encode 1000000 uri's
+Java took: 2388 millis
+RL took: 2129 millis
+
+To decode 1000000 uri's
+Java took: 1793 millis
+RL took: 667 millis
+
+To parse 100000 uri's
+java took: 971 millis
+rl took: 21548 millis
+```
+
+So in the decoding and encoding part we're either on par with or faster than then java.net.URLEncoder and java.net.URLDecoder
+
 ## Thanks
 
 to the following projects for leading the way:  

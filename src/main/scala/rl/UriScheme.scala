@@ -33,5 +33,5 @@ object Scheme {
     "mongo" -> 27017)
 }
 case class Scheme(scheme: String) extends UriScheme {
-  val uriPart = scheme.toOption map { ":" + _ } getOrElse ""
+  val uriPart = scheme.toOption map { _ + ":" } getOrElse ""
 }

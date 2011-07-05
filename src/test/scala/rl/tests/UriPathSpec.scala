@@ -3,7 +3,7 @@ package tests
 
 import org.specs2.Specification
 
-class PathNormalizationSpec extends Specification { def is =
+class UriPathSpec extends Specification { def is =
 
   "Normalizing windows paths should" ^
     "convert a local path 'C:\\Windows\\Temp\\foo.txt'" ! normalizeLocalWindowsPath ^

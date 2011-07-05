@@ -25,7 +25,7 @@ case class StringQueryString(rawValue: String) extends QueryString {
   type Value = String
 }
 case class StringSeqQueryString(rawValue: String) extends QueryString {
-  val uriPart = value.sortWith(_ >= _).map(_.urlEncode).mkString("?", "&", "")
+  val uriPart = "?" + value.sortWith(_ >= _).map(_.urlEncode).mkString("?", "&", "")
 
   val empty = Nil
 
@@ -35,9 +35,9 @@ case class StringSeqQueryString(rawValue: String) extends QueryString {
 }
 case class MapQueryString(rawValue: String) extends QueryString {
   val uriPart = {
-    value map {
+    "?" + (value map {
       case (k, v) ⇒ v.map(s ⇒ "%s=%s".format(k.urlEncode, s.urlEncode)).mkString("&")
-    } mkString "&"
+    } mkString "&")
   }
 
   val empty = Map.empty[String, List[String]]

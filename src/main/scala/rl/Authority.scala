@@ -33,9 +33,9 @@ sealed trait UriHost extends UriNode {
 }
 
 case object EmptyHost extends UriHost {
-  val uriPart = ""
+  val uriPart = value
 
-  val value = ""
+  val value = "/"
 }
 
 case class HostName(value: String) extends UriHost {
