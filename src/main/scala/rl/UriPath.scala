@@ -36,14 +36,14 @@ case class RelativePath(segments: GenSeq[String]) extends UriPath {
 
   val isRelative: Boolean = true
 
-  val uriPart = segments mkString ("", UriPath.unixSeparator, UriPath.unixSeparator)
+  val uriPart = segments map { UrlCodingUtils.ensureUrlEncoding(_) } mkString ("", UriPath.unixSeparator, UriPath.unixSeparator)
 }
 case class AbsolutePath(segments: GenSeq[String]) extends UriPath {
   val isAbsolute: Boolean = true
 
   val isRelative: Boolean = false
 
-  val uriPart = segments mkString ("", UriPath.unixSeparator, UriPath.unixSeparator)
+  val uriPart = segments map { UrlCodingUtils.ensureUrlEncoding(_) } mkString ("", UriPath.unixSeparator, UriPath.unixSeparator)
 }
 trait PathOps {
 
