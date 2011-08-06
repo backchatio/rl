@@ -1,10 +1,10 @@
 package rl
 
 import util.parsing.combinator._
-import java.net.IDN
 import rl.UrlCodingUtils._
 import rl.UriPath._
 import java.lang.{ UnsupportedOperationException, Boolean }
+import java.net.{ URISyntaxException, IDN, URI }
 
 trait UriNode {
   def uriPart: String
@@ -159,8 +159,8 @@ object Uri {
       ((q mkString "").toOption map { v ⇒
         (v.indexOf('&') > -1, v.indexOf('=') > -1) match {
           case (true, true) | (false, true) ⇒ MapQueryString(v)
-          case (true, false) ⇒ StringSeqQueryString(v)
-          case (false, false) ⇒ StringQueryString(v)
+          case (true, false)                ⇒ StringSeqQueryString(v)
+          case (false, false)               ⇒ StringQueryString(v)
         }
       }) getOrElse EmptyQueryString
     }
@@ -227,14 +227,14 @@ object Uri {
 
   private[rl] object UriParser extends UriParser
 
-  private def internationalize(parts: (String, String, String, String, String)) = {
-    val (sch, auth, pth, qry, frag) = parts
-    auth.toOption map { rawAuth ⇒
-      val (_, a, _) = Authority(rawAuth)
-      val h = IDN.toASCII(a)
-      (sch, ensureUrlEncoding(h), pth, qry, frag)
-    } getOrElse { parts }
-  }
+  //  private def internationalize(parts: (String, String, String, String, String)) = {
+  //    val (sch, auth, pth, qry, frag) = parts
+  //    auth.toOption map { rawAuth ⇒
+  //      val (_, a, _) = Authority(rawAuth)
+  //      val h = IDN.toASCII(a)
+  //      (sch, ensureUrlEncoding(h), pth, qry, frag)
+  //    } getOrElse { parts }
+  //  }
 
   /**
    * Returns a [[rl.Uri]] object based on the parsed string. This method is very lenient and just tokenizes the string
@@ -245,24 +245,51 @@ object Uri {
    *
    * @return the parsed unnormalized [[rl.Uri]]
    */
-  private[rl] def tokenize(uriString: String) = {
-    val UriParts(_, sch, _, auth, pth, _, qry, _, frag) = uriString
-    (sch, auth, pth, qry, frag)
-  }
-
-  private def encodePaths(parts: (String, String, String, String, String)) = {
-    val pth = parts._3
-    parts.copy(_3 = ensureUrlEncoding(pth))
-  }
+  //  private[rl] def tokenize(uriString: String) = {
+  //    val UriParts(_, sch, _, auth, pth, _, qry, _, frag) = uriString
+  //    (sch, auth, pth, qry, frag)
+  //  }
+  //
+  //  private def encodePaths(parts: (String, String, String, String, String)): (String, String, String, String, String) = {
+  //    val pth = parts._3
+  //    parts.copy(_3 = ensureUrlEncoding(pth))
+  //  }
 
   def apply(uriString: String) = {
     val unixifiedPath = windowsToUnixPath(uriString)
-    val tokens = tokenize(unixifiedPath)
-    val i13l = internationalize(tokens)
-    val withI13lHost = if (tokens._2 != i13l._2) unixifiedPath.replace(tokens._2, i13l._2) else unixifiedPath
-    val encodedPath = encodePaths(i13l)
-    val toParse = if (tokens._3 != encodedPath._3) withI13lHost.replace(tokens._3, encodedPath._3) else withI13lHost
-    UriParser(toParse, uriString)
+    //    val tokens = tokenize(unixifiedPath)
+    //    //    val i13l = internationalize(tokens)
+    //    //    val withI13lHost = if (tokens._2 != i13l._2) unixifiedPath.replace(tokens._2, i13l._2) else unixifiedPath
+    //    val encodedPath = encodePaths(tokens)
+    //    val toParse = if (tokens._3 != encodedPath._3) unixifiedPath.replace(tokens._3, encodedPath._3) else unixifiedPath
+
+    try {
+      val parsed = URI.create(uriString)
+      val pth = parsed.getRawPath.toOption match {
+        case None                           ⇒ EmptyPath
+        case Some(pt) if pt.startsWith("/") ⇒ AbsolutePath(pt.split("/"))
+        case Some(pt)                       ⇒ RelativePath(pt.split("/"))
+      }
+
+      if (parsed.isAbsolute) {
+        AbsoluteUri(
+          Scheme(parsed.getScheme),
+          Some(Authority(parsed.getRawAuthority)),
+          pth,
+          QueryString(parsed.getRawQuery),
+          UriFragment(parsed.getRawFragment))
+      } else {
+        RelativeUri(
+          Some(Authority(parsed.getRawAuthority)),
+          pth,
+          QueryString(parsed.getRawQuery),
+          UriFragment(parsed.getRawFragment))
+      }
+    } catch {
+      case e: URISyntaxException   ⇒ FailedUri(e.getMessage, uriString)
+      case e: NullPointerException ⇒ FailedUri("A uri string can't be null")
+      case e                       ⇒ FailedUri(e.getMessage)
+    }
   }
 
 }

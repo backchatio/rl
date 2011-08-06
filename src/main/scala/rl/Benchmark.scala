@@ -1,6 +1,6 @@
 package rl
 
-import java.net.{URLDecoder, URI, URLEncoder}
+import java.net.{ URLDecoder, URI, URLEncoder }
 import java.util.Date
 
 object Benchmark extends App {
@@ -13,7 +13,7 @@ object Benchmark extends App {
   println("string to encode: " + toEncode)
   println("url to parse: " + url)
   println("java encoded: " + URLEncoder.encode(toEncode, "UTF-8"))
-  println("java parsed: " +  URI.create(url).toASCIIString)
+  println("java parsed: " + URI.create(url).toASCIIString)
   println("rl encoded: " + UrlCodingUtils.urlEncode(toEncode))
   println("rl parsed: " + Uri(url).asciiString)
 
@@ -35,8 +35,6 @@ object Benchmark extends App {
     URLEncoder.encode(toEncode, "UTF-8")
   }
   val jnetEnd = new Date
-
-
 
   val rlstart = new Date
 
@@ -72,7 +70,7 @@ object Benchmark extends App {
   }
 
   val jurl = new Date
-  
+
   val uristart = new Date
 
   (1 to 100000) foreach { _ ⇒

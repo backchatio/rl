@@ -1,5 +1,16 @@
 package rl
 
+object QueryString {
+  def apply(rawValue: String) = {
+    rawValue.toOption map { v ⇒
+      (v.indexOf('&') > -1, v.indexOf('=') > -1) match {
+        case (true, true) | (false, true) ⇒ MapQueryString(v)
+        case (true, false)                ⇒ StringSeqQueryString(v)
+        case (false, false)               ⇒ StringQueryString(v)
+      }
+    } getOrElse EmptyQueryString
+  }
+}
 trait QueryString extends UriNode {
   type Value
   def rawValue: String

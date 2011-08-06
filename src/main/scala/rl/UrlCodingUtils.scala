@@ -40,8 +40,8 @@ trait UrlCodingUtils {
     })
   }
 
-  def urlEncode(toEncode: String) = {
-    val in = Utf8.encode(ensureUppercasedEncodings(toEncode))
+  def urlEncode(toEncode: String, charset: Charset = Utf8) = {
+    val in = charset.encode(ensureUppercasedEncodings(toEncode))
     val out = CharBuffer.allocate((in.remaining() * 3).ceil.toInt)
     while (in.hasRemaining) {
       val b = in.get() & 0xFF
@@ -57,7 +57,7 @@ trait UrlCodingUtils {
     out.toString
   }
 
-  def urlDecode(toDecode: String) = {
+  def urlDecode(toDecode: String, charset: Charset = Utf8, plusIsSpace: Boolean = false) = {
     val in = CharBuffer.wrap(toDecode)
     val out = ByteBuffer.allocate(in.remaining())
     while (in.hasRemaining) {
@@ -76,7 +76,7 @@ trait UrlCodingUtils {
         } else {
           in.position(in.position() - 1)
         }
-      } else if (c == '+') {
+      } else if (c == '+' && plusIsSpace) {
         out.put(' '.toByte)
       } else {
         out.put(c.toByte)

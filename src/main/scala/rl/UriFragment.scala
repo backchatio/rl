@@ -1,5 +1,8 @@
 package rl
 
+object UriFragment {
+  def apply(rawValue: String) = rawValue.toOption map { StringFragment(_) } getOrElse EmptyFragment
+}
 trait UriFragment extends UriNode {
   type Value
   def rawValue: String

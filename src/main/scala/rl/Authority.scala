@@ -1,5 +1,7 @@
 package rl
 
+import java.net.IDN
+
 object UserInfo {
   def apply(userInfo: String): Option[UserInfo] = {
     userInfo.toOption map { uif ⇒
@@ -14,7 +16,7 @@ case class UserInfo(user: String, secret: String) extends UriNode {
 }
 
 object Authority {
-  def apply(authority: String): (Option[UserInfo], String, Option[Int]) = {
+  def apply(authority: String): Authority = {
     val `has @` = (authority indexOf '@') > -1
     val Array(uif, auu) = if (`has @`) authority split '@' else Array("", authority)
     val au = if (auu.startsWith("@")) auu substring 1 else auu
@@ -23,8 +25,8 @@ object Authority {
     val `has :` = au.indexOf(':') > -1
     if (`has :`) {
       val Array(h, port) = au split ':'
-      (uinf, h, Some(port.toInt))
-    } else (uinf, au, None)
+      Authority(uinf, HostName(h), Some(port.toInt))
+    } else Authority(uinf, HostName(au), None)
   }
 }
 
@@ -39,7 +41,7 @@ case object EmptyHost extends UriHost {
 }
 
 case class HostName(value: String) extends UriHost {
-  val uriPart = value
+  val uriPart = UrlCodingUtils.ensureUrlEncoding(IDN.toASCII(value))
 }
 case class IPv4Address(value: String) extends UriHost {
   val uriPart = value

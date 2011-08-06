@@ -1,18 +1,22 @@
 package rl
 
 import collection.GenSeq
+import collection.immutable.Vector
 
 trait UriPath extends UriNode {
   def segments: GenSeq[String]
   def isRelative: Boolean
   def isAbsolute: Boolean
 
-  def /(path: String): Uri = /(Uri(path))
-  def /(uri: Uri): Uri = null
-
-  def merge(uri: Uri): Uri = null
-
-  def relativize(uri: Uri): Uri = null
+  def collapseDots(): GenSeq[String] = {
+    (Vector.empty[String] /: segments) { (lb, seg) ⇒
+      seg match {
+        case "."  ⇒ lb
+        case ".." ⇒ if (!lb.isEmpty) lb.dropRight(1) else lb
+        case a    ⇒ lb :+ a
+      }
+    }
+  }
 }
 
 trait EmptyUriPath extends UriPath {
