@@ -3,13 +3,14 @@ package tests
 
 import org.specs2.Specification
 
-class UriPathSpec extends Specification { def is =
+class UriPathSpec extends Specification {
+  def is =
 
-  "Normalizing windows paths should" ^
-    "convert a local path 'C:\\Windows\\Temp\\foo.txt'" ! normalizeLocalWindowsPath ^
-    "convert a relative path 'Windows\\Temp\\foo.txt'" ! normalizeRelativeWindowsPath ^
-    "convert a UNC path '\\\\theserver\\theshare\\thefile.txt" ! normalizeUncWindowsPath  ^
-    "Encode the spaces in a path" ! normalizeSpacesInPath ^ end
+    "Normalizing windows paths should" ^
+      "convert a local path 'C:\\Windows\\Temp\\foo.txt'" ! normalizeLocalWindowsPath ^
+      "convert a relative path 'Windows\\Temp\\foo.txt'" ! normalizeRelativeWindowsPath ^
+      "convert a UNC path '\\\\theserver\\theshare\\thefile.txt" ! normalizeUncWindowsPath ^
+      "Encode the spaces in a path" ! normalizeSpacesInPath ^ end
 
   def normalizeLocalWindowsPath = {
     UriPath.windowsToUnixPath("C:\\Windows\\Temp\\foo.txt") must_== "file:///C:/Windows/Temp/foo.txt"

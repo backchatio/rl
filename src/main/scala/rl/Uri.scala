@@ -79,7 +79,6 @@ object Uri {
    */
   val UriParts = """^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?""".r
 
-
   def apply(uriString: String) = {
     try {
       val parsed = URI.create(uriString)
