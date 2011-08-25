@@ -4,63 +4,46 @@ package tests
 import org.specs2.Specification
 import Uri._
 
-object TestParser extends Uri.UriParser {
-  def parseFragment(possible: String) = {
-    parseAll(fragmentOpt, possible) match {
-      case Success(result, _) ⇒ result
-      case Failure(msg, _)    ⇒ msg
-    }
+object TestParser {
+  def parseFragment(possible: String): Uri = {
+    return notImplemented
   }
 
-  def parseQuery(possible: String) = {
-    parseAll(queryOpt, possible) match {
-      case Success(result, _) ⇒ result
-      case Failure(msg, _)    ⇒ msg
-    }
+  def parseQuery(possible: String): Uri = {
+    return notImplemented
   }
 
-  def parseIPv4(possible: String) = {
-    parseAll(ipv4Address, possible) match {
-      case Success(address, _) ⇒ address
-      case _                   ⇒ null
-    }
+  def parseIPv4(possible: String): Uri = {
+    return notImplemented
   }
 
-  def parseIPv6(possible: String) = {
-    parseAll(ipv6Address, possible) match {
-      case Success(address, _) ⇒ address
-      case _                   ⇒ null
-    }
+  def parseIPv6(possible: String): Uri = {
+    return notImplemented
   }
 
-  def parseIPvFuture(possible: String) = {
-    parseAll(ipvFuture, possible) match {
-      case Success(address, _) ⇒ address
-      case _                   ⇒ null
-    }
+  def parseIPvFuture(possible: String): Uri = {
+    return notImplemented
   }
 
-  def parseIPLiteral(possible: String) = {
-    parseAll(ipLiteral, possible) match {
-      case Success(address, _) ⇒ address
-      case _                   ⇒ null
-    }
+  def parseIPLiteral(possible: String): Uri = {
+    return notImplemented
   }
 
-  def parsePath(possible: String) = {
-    parseAll(path, possible) match {
-      case Success(path, _) ⇒ path
-      case _                ⇒ null
-    }
+  def parsePath(possible: String): Uri = {
+    return notImplemented
   }
 
-  def parseAuthority(possible: String) = {
-    parseAll(authority, possible) match {
-      case Success(auth, _) ⇒ auth
-      case _                ⇒ null
-    }
+  def parseAuthority(possible: String): Uri = {
+    return notImplemented
   }
 
+  def apply(toParse: String, originalUri: String): Uri = {
+    return notImplemented
+  }
+
+  private def notImplemented: Uri = {
+    return new FailedUri("This implementation is not complete", "http://kang.jazz.net")
+  }
 }
 
 class UriParserSpec extends Specification {
