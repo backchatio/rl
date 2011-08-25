@@ -60,8 +60,9 @@ trait PathOps {
     } else convertWindowsToUnixPath(path)
   }
 
-  private def convertWindowsToUnixPath(path: String) = path.replace(windowsSeparator, unixSeparator)
-
+  private def convertWindowsToUnixPath(path: String) = {
+    path.replace(windowsSeparator, unixSeparator).replace(" ", "%20")
+  }
 }
 
 object UriPath extends PathOps
