@@ -23,14 +23,21 @@ class UrlCodingSpec extends Specification {
       } ^ p ^
       "Decoding a URI should" ^
       "not change any of the allowed chars" ! {
-        val decoded = urlDecode("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890!$&'()*+,;=:/?#[]@-._~")
-        decoded must_== "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890!$&'()* ,;=:/?#[]@-._~"
+        val decoded = urlDecode("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890!$&'()*,;=:/?#[]@-._~")
+        decoded must_== "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890!$&'()*,;=:/?#[]@-._~"
       } ^
       "decode a pct encoded string" ! {
         urlDecode("hello%20world") must_== "hello world"
       } ^
       "decode value consisting of 2 values to 1 char" ! {
         urlDecode("%C3%A9") must_== "é"
+      } ^
+      "The plusIsSpace flag specifies how to treat pluses" ^
+      "it treats + as allowed when the plusIsSpace flag is either not supplied or supplied as false" ! {
+        urlDecode("+") must_== "+"
+        urlDecode("+", plusIsSpace = false) must_== "+"
+      } ^
+      "it decodes + as space when the plusIsSpace flag is true" ! {
+        urlDecode("+", plusIsSpace = false) must_== "+"
       } ^ end
-
 }
