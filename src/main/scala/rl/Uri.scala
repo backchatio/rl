@@ -8,6 +8,7 @@ import java.net.{ URISyntaxException, IDN, URI }
 
 trait UriNode {
   def uriPart: String
+  def normalize: UriNode
 }
 
 trait UriOperations {

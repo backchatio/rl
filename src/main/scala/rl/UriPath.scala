@@ -17,10 +17,13 @@ trait UriPath extends UriNode {
       }
     }
   }
+
 }
 
 trait EmptyUriPath extends UriPath {
   val segments = Nil
+
+  def normalize = this
 }
 
 case object EmptyPath extends EmptyUriPath {
@@ -37,6 +40,8 @@ case class RelativePath(segments: GenSeq[String]) extends UriPath {
   val isRelative: Boolean = true
 
   val uriPart = segments map { UrlCodingUtils.ensureUrlEncoding(_) } mkString ("", UriPath.unixSeparator, UriPath.unixSeparator)
+
+  def normalize = RelativePath(collapseDots())
 }
 case class AbsolutePath(segments: GenSeq[String]) extends UriPath {
   val isAbsolute: Boolean = true
@@ -44,6 +49,8 @@ case class AbsolutePath(segments: GenSeq[String]) extends UriPath {
   val isRelative: Boolean = false
 
   val uriPart = segments map { UrlCodingUtils.ensureUrlEncoding(_) } mkString ("", UriPath.unixSeparator, UriPath.unixSeparator)
+
+  def normalize = AbsolutePath(collapseDots())
 }
 trait PathOps {
 
