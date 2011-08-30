@@ -35,24 +35,30 @@ object Authority {
 
 sealed trait UriHost extends UriNode {
   def value: String
-  def normalize: UriHost with UriHostDomains = new IPv6Address(value) with UriHostDomains {
-    protected val parsed = (value, "", "")
-  }
+  def normalize: UriHost with UriHostDomains
 }
 
-case object EmptyHost extends UriHost {
+class EmptyHost extends UriHost {
   val uriPart = value
 
   val value = "/"
 
+  def normalize = new EmptyHost with UriHostDomains {
+    protected def parsed = ("/", "", "")
+  }
 }
 
+case object DefaultEmptyHost extends EmptyHost
 case class HostName(value: String) extends UriHost {
 
   val uriPart = UrlCodingUtils.ensureUrlEncoding(value)
 
-  override def normalize = new HostName(value) with UriHostDomains {
-    protected val parsed = DomainParser(IDN.toASCII(value))
+  override def normalize = {
+    val va = if (value.startsWith("www.")) value.substring(4) else value
+    val punycode = IDN.toASCII(va)
+    new HostName(punycode) with UriHostDomains {
+      protected val parsed = DomainParser(this.value)
+    }
   }
 }
 case class IPv4Address(value: String) extends UriHost {
@@ -72,14 +78,20 @@ case class IPv4Address(value: String) extends UriHost {
 }
 case class IPv6Address(value: String) extends UriHost {
   val uriPart = "[" + value + "]"
+  def normalize: UriHost with UriHostDomains = new IPv6Address(value) with UriHostDomains {
+    protected val parsed = (value, "", "")
+  }
 }
 case class IPvFutureAddress(value: String) extends UriHost {
   val uriPart = "[" + value + "]"
+  def normalize: UriHost with UriHostDomains = new IPvFutureAddress(value) with UriHostDomains {
+    protected val parsed = (value, "", "")
+  }
 }
 
 case class Authority(userInfo: Option[UserInfo], host: UriHost, port: Option[Int]) extends UriNode {
 
-  def normalize = this
+  def normalize = copy(userInfo.map(_.normalize), host.normalize, port)
 
   val uriPart = "//" + toString + "/"
   override def toString = {

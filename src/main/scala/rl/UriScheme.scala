@@ -4,6 +4,7 @@ import java.util.Locale.ENGLISH
 
 trait UriScheme extends UriNode {
   def scheme: String
+  def normalize: UriScheme
 }
 case object NoScheme extends UriScheme {
   val scheme = ""

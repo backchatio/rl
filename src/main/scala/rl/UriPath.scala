@@ -18,6 +18,7 @@ trait UriPath extends UriNode {
     }
   }
 
+  def normalize: UriPath
 }
 
 trait EmptyUriPath extends UriPath {

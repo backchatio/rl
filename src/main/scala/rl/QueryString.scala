@@ -3,6 +3,9 @@ package rl
 import collection.{ GenSeq, immutable, SortedMap }
 
 object QueryString {
+
+  val DEFAULT_EXCLUSIONS = List("utm_source", "utm_medium", "utm_term", "utm_content", "utm_campaign", "sms_ss", "awesm")
+
   def apply(rawValue: String) = {
     rawValue.toOption map { v ⇒
       (v.indexOf('&') > -1, v.indexOf('=') > -1) match {
@@ -18,6 +21,8 @@ trait QueryString extends UriNode {
   def rawValue: String
   def value: Value
   def empty: Value
+
+  def normalize: QueryString
 }
 case object EmptyQueryString extends QueryString {
 
@@ -81,9 +86,9 @@ case class MapQueryString(initialValues: Seq[(String, Seq[String])], rawValue: S
 
   val empty = Map.empty[String, List[String]]
 
-  val value: Value = Map(initialValues: _*)
+  def value: Value = Map(initialValues: _*)
 
-  def normalize = copy(SortedMap(initialValues: _*).toSeq)
+  def normalize = copy(SortedMap(initialValues: _*) filterKeys (k ⇒ !QueryString.DEFAULT_EXCLUSIONS.contains(k)) toSeq)
 
   private def mkString(values: Value = value) = values map {
     case (k, v) ⇒ v.map(s ⇒ "%s=%s".format(k.urlEncode, s.urlEncode)).mkString("&")

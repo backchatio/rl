@@ -4,6 +4,7 @@ package tests
 import org.specs2.Specification
 import Uri._
 
+class NotImplementedException(msg: String) extends RuntimeException(msg)
 object TestParser {
   def parseFragment(possible: String): Uri = {
     return notImplemented
@@ -42,7 +43,7 @@ object TestParser {
   }
 
   private def notImplemented: Uri = {
-    return new FailedUri("This implementation is not complete", "http://kang.jazz.net")
+    return new FailedUri(new NotImplementedException("This implementation is not complete"), "http://kang.jazz.net")
   }
 }
 

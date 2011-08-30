@@ -8,7 +8,7 @@ trait UriFragment extends UriNode {
   def rawValue: String
   def value: Value
 
-  def normalize = this
+  def normalize: UriFragment = this
 }
 
 case object EmptyFragment extends UriFragment {

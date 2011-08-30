@@ -5,9 +5,9 @@ import io.Source
 trait UriHostDomains { self: UriHost ⇒
   protected def parsed: (String, String, String)
 
-  val publicSuffix = parsed._1
-  val domain: String = parsed._2
-  val subdomain: String = parsed._3
+  def publicSuffix = parsed._1
+  def domain: String = parsed._2
+  def subdomain: String = parsed._3
 }
 object DomainParser {
 
@@ -48,11 +48,11 @@ object DomainParser {
     val parts = (uri split "\\.").reverse
     val part = parts.head
     val subParts = publicSuffixes get part getOrElse PublicSuffixList.empty
-
     if (subParts contains "*") {
       (part + "." + parts(1), parts(2), parts.slice(3, parts.size) mkString ".")
     } else if (subParts.isEmpty || subParts.notContains(parts(1))) {
-      (part, parts(1), parts.slice(2, parts.size) mkString ".")
+
+      (part, if (parts.size > 1) parts(1) else "", if (parts.size > 2) parts.slice(2, parts.size) mkString "." else "")
     } else {
       (part, "", "")
     }
