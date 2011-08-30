@@ -1,6 +1,6 @@
 import sbt._
 import Keys._
-import ScalariformPlugin.formatPreferences
+import ScalariformPlugin._
 
 // Shell prompt which show the current project, git branch and build version
 // git magic from Daniel Sobral, adapted by Ivan Porto Carrero to also work with git flow branches
@@ -68,10 +68,10 @@ object RlSettings {
         "-Xcheckinit",
         "-encoding", "utf8",
         "-P:continuations:enable"),
-      retrieveManaged := true,
       libraryDependencies ++= Seq(
         "org.specs2" %% "specs2" % "1.5" % "test"
       ),
+      (defaultExcludes in formatSources) <<= (defaultExcludes) (_ || "*Spec.scala"),
       libraryDependencies ++= compilerPlugins,
       credentials += Credentials(Path.userHome / ".ivy2" / ".scala_tools_credentials"),
       autoCompilerPlugins := true,
@@ -111,9 +111,18 @@ object RlBuild extends Build {
 
   import RlSettings._
   val buildShellPrompt =  ShellPrompt.buildShellPrompt
+  val downloadDomainFile = TaskKey[File]("update-tld-file", "updates the tld names dat file from mozilla")
+  val domainFile = SettingKey[File]("tld-file", "the file that contains the tld names")
+
 
   lazy val root = Project ("rl", file("."), settings = projectSettings ++ Seq(
-    description := "An RFC-3986 compliant URI library.")) 
+    domainFile <<= (sourceDirectory) apply { _ / "main" / "resources" / "rl" / "tld_names.dat" },
+    downloadDomainFile <<= (domainFile, streams) map { (domFile, s) =>
+      domFile #< url("http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1") ! s.log
+      domFile
+    },
+    (compile in Compile) <<= (compile in Compile) dependsOn downloadDomainFile,
+    description := "An RFC-3986 compliant URI library."))
   
 }
 

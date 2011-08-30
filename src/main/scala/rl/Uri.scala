@@ -8,6 +8,7 @@ import java.net.{ URISyntaxException, IDN, URI }
 
 trait UriNode {
   def uriPart: String
+  def normalize: UriNode
 }
 
 trait UriOperations {
@@ -30,6 +31,7 @@ trait Uri {
   def originalUri: String
   def isAbsolute: Boolean
   def isRelative: Boolean
+  def normalize: Uri
 
   def asciiString = {
     scheme.uriPart + authority.map(_.uriPart).getOrElse("") + segments.uriPart + rawQuery.uriPart + fragment.uriPart
@@ -40,6 +42,7 @@ case class AbsoluteUri(scheme: Scheme, authority: Option[Authority], segments: U
   val isAbsolute: Boolean = true
   val isRelative: Boolean = false
 
+  def normalize = copy(scheme.normalize, authority.map(_.normalize), segments.normalize, rawQuery.normalize, fragment.normalize)
 }
 
 case class RelativeUri(authority: Option[Authority], segments: UriPath, rawQuery: QueryString, fragment: UriFragment, originalUri: String = "") extends Uri {
@@ -47,13 +50,15 @@ case class RelativeUri(authority: Option[Authority], segments: UriPath, rawQuery
 
   val isAbsolute: Boolean = false
   val isRelative: Boolean = true
+
+  def normalize = copy(authority.map(_.normalize), segments.normalize, rawQuery.normalize, fragment.normalize)
 }
 
-case class FailedUri(msg: String, originalUri: String = "") extends Uri {
+case class FailedUri(throwable: Throwable, originalUri: String = "") extends Uri {
 
   private def noop = {
     val u = originalUri.toOption getOrElse "not set"
-    throw new UnsupportedOperationException("Parsing the uri '%s' failed with:\n%s" format (u, msg))
+    throw new UnsupportedOperationException("Parsing the uri '%s' failed." format u, throwable)
   }
 
   def fragment = noop
@@ -69,6 +74,8 @@ case class FailedUri(msg: String, originalUri: String = "") extends Uri {
   val isRelative: Boolean = false
 
   val isAbsolute: Boolean = false
+
+  def normalize = this
 }
 
 object Uri {
@@ -89,23 +96,31 @@ object Uri {
       }
 
       if (parsed.isAbsolute) {
-        AbsoluteUri(
+        val r = AbsoluteUri(
           Scheme(parsed.getScheme),
           Some(Authority(parsed.getRawAuthority)),
           pth,
           QueryString(parsed.getRawQuery),
           UriFragment(parsed.getRawFragment))
+        r
       } else {
-        RelativeUri(
+        val r = RelativeUri(
           Some(Authority(parsed.getRawAuthority)),
           pth,
           QueryString(parsed.getRawQuery),
           UriFragment(parsed.getRawFragment))
+        r
       }
     } catch {
-      case e: URISyntaxException   ⇒ FailedUri(e.getMessage, uriString)
-      case e: NullPointerException ⇒ FailedUri("A uri string can't be null", uriString)
-      case e                       ⇒ FailedUri(e.getMessage, uriString)
+      case e: URISyntaxException ⇒ {
+        FailedUri(e, uriString)
+      }
+      case e: NullPointerException ⇒ {
+        FailedUri(e, uriString)
+      }
+      case e ⇒ {
+        FailedUri(e, uriString)
+      }
     }
   }
 
