@@ -1,8 +1,11 @@
 package rl
 package tests
 
+import collection.GenSeq
+
 import org.specs2.Specification
 import Uri._
+import java.net.URI
 
 class NotImplementedException(msg: String) extends RuntimeException(msg)
 object TestParser {
@@ -44,6 +47,26 @@ object TestParser {
 
   private def notImplemented: Uri = {
     return new FailedUri(new NotImplementedException("This implementation is not complete"), "http://kang.jazz.net")
+  }
+}
+
+object UriParser {
+  def parse(text : String) : Uri = {
+    val theUri = new URI(text)
+    new AbsoluteUri(
+      Scheme(theUri.getScheme), 
+      Some(Authority(theUri.getAuthority)), 
+      parsePath(theUri.getPath),
+      parseQueryString(theUri.getQuery),
+      StringFragment(theUri.getFragment),
+      text
+    )
+  }
+
+  private def parsePath(text : String) = AbsolutePath(text.split("/").drop(1).toList)  
+  private def parseQueryString(text : String) : QueryString = {
+    if (null == text || text.trim.size == 0) return EmptyQueryString
+    StringQueryString(text)
   }
 }
 
@@ -162,13 +185,13 @@ class UriParserSpec extends Specification {
           "http://www.example.org/hello/world.txt/?id=5&part=three#there-you-go")
       }.pendingUntilFixed ^
       "absolute uri 'http://www.example.org/hello/world.txt/#here-we-are'" ! {
-        TestParser("http://www.example.org/hello/world.txt/#here-we-are", "http://www.example.org/hello/world.txt/#here-we-are") must_== AbsoluteUri(
+        UriParser.parse("http://www.example.org/hello/world.txt/#here-we-are") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), None)),
           AbsolutePath("hello" :: "world.txt" :: Nil),
           EmptyQueryString,
           StringFragment("here-we-are"),
           "http://www.example.org/hello/world.txt/#here-we-are")
-      }.pendingUntilFixed ^ end
+      } ^ end
 
 }
