@@ -122,6 +122,7 @@ object RlBuild extends Build {
       domFile
     },
     (compile in Compile) <<= (compile in Compile) dependsOn downloadDomainFile,
+    unmanagedClasspath in Compile += Attributed.blank(new java.io.File("doesnotexist")), // work-around for documentation bug
     description := "An RFC-3986 compliant URI library."))
   
 }
