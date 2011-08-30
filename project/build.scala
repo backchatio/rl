@@ -55,7 +55,7 @@ object RlSettings {
   )
 
   val buildSettings = Defaults.defaultSettings ++ formatSettings ++ Seq(
-      name := "logback-akka",
+      name := "rl",
       version := buildVersion,
       organization := buildOrganization,
       scalaVersion := buildScalaVersion,
