@@ -28,8 +28,8 @@ object ShellPrompt {
 
 object RlSettings {
   val buildOrganization = "com.mojolly.rl"
-  val buildScalaVersion = "2.9.0-1"
-  val buildVersion      = "0.1-SNAPSHOT"
+  val buildScalaVersion = "2.9.1"
+  val buildVersion      = "0.2-SNAPSHOT"
 
   lazy val formatSettings = ScalariformPlugin.settings ++ Seq(
     formatPreferences in Compile := formattingPreferences,
@@ -50,7 +50,7 @@ object RlSettings {
   val description = SettingKey[String]("description")
 
   val compilerPlugins = Seq(
-    compilerPlugin("org.scala-lang.plugins" % "continuations" % "2.9.0-1"),
+    compilerPlugin("org.scala-lang.plugins" % "continuations" % "2.9.1"),
     compilerPlugin("org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7")
   )
 
@@ -69,11 +69,10 @@ object RlSettings {
         "-encoding", "utf8",
         "-P:continuations:enable"),
       libraryDependencies ++= Seq(
-        "org.specs2" %% "specs2" % "1.5" % "test"
+        "org.specs2" % "specs2_2.9.0-1" % "1.5" % "test"
       ),
       (defaultExcludes in formatSources) <<= (defaultExcludes) (_ || "*Spec.scala"),
       libraryDependencies ++= compilerPlugins,
-      credentials += Credentials(Path.userHome / ".ivy2" / ".scala_tools_credentials"),
       autoCompilerPlugins := true,
       parallelExecution in Test := false,
       publishTo <<= (version) { version: String => 
