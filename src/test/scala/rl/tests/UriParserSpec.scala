@@ -5,7 +5,7 @@ import collection.GenSeq
 
 import org.specs2.Specification
 import Uri._
-import java.net.URI
+import java.net.{URI,URISyntaxException}
 
 class NotImplementedException(msg: String) extends RuntimeException(msg)
 object TestParser {
@@ -52,7 +52,14 @@ object TestParser {
 
 object UriParser {
   def parse(text : String) : Uri = {
-    val theUri = new URI(text)
+    var theUri : URI = null
+
+    try {
+      theUri = new URI(text)
+    } catch {
+      case parseFail : URISyntaxException => return new FailedUri(parseFail, text)
+    }
+    
     new AbsoluteUri(
       Scheme(theUri.getScheme), 
       Some(Authority(theUri.getAuthority)), 
@@ -63,7 +70,10 @@ object UriParser {
     )
   }
 
-  private def parsePath(text : String) = AbsolutePath(text.split("/").drop(1).toList)  
+  private def parsePath(text : String) : UriPath = { 
+    val isEmptyPath = null == text || text.trim.size == 0 || text == "/"
+    if (isEmptyPath) EmptyPath else AbsolutePath(text.split("/").drop(1).toList)  
+  }
 
   private def parseQueryString(text : String) : QueryString = {
     if (null == text || text.trim.size == 0) return EmptyQueryString
@@ -132,30 +142,30 @@ class UriParserSpec extends Specification {
       }.pendingUntilFixed ^ p ^
       "when parsing a full uri" ^
       "return a failure for 'http://www.exa mple.org'" ! {
-        val res = TestParser("http://www.exa mple.org", "http://www.exa mple.org")
+        val res = UriParser.parse("http://www.exa mple.org")
         res must beAnInstanceOf[FailedUri]
         res.originalUri must_== "http://www.exa mple.org"
-      }.pendingUntilFixed ^
+      } ^
       "absolute uri 'http://www.example.org:8080'" ! {
-        TestParser("http://www.example.org:8080", "http://www.example.org:8080") must_== AbsoluteUri(
+        UriParser.parse("http://www.example.org:8080") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), Some(8080))),
           EmptyPath,
           EmptyQueryString,
           EmptyFragment,
           "http://www.example.org:8080")
-      }.pendingUntilFixed ^
+      } ^
       "absolute uri 'http://www.example.org/'" ! {
-        TestParser("http://www.example.org/", "http://www.example.org/") must_== AbsoluteUri(
+        UriParser.parse("http://www.example.org/") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), None)),
           EmptyPath,
           EmptyQueryString,
           EmptyFragment,
           "http://www.example.org/")
-      }.pendingUntilFixed ^
+      } ^
       "absolute uri 'http://www.詹姆斯.org/'" ! {
-        Uri("http://www.詹姆斯.org/") must_== AbsoluteUri(
+        UriParser.parse("http://www.詹姆斯.org/") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.xn--8ws00zhy3a.org"), None)),
           EmptyPath,
@@ -164,14 +174,14 @@ class UriParserSpec extends Specification {
           "http://www.詹姆斯.org/")
       }.pendingUntilFixed ^
       "absolute uri 'http://www.example.org/hello/world.txt'" ! {
-        TestParser("http://www.example.org/hello/world.txt", "http://www.example.org/hello/world.txt") must_== AbsoluteUri(
+        UriParser.parse("http://www.example.org/hello/world.txt") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), None)),
           AbsolutePath("hello" :: "world.txt" :: Nil),
           EmptyQueryString,
           EmptyFragment,
           "http://www.example.org/hello/world.txt")
-      }.pendingUntilFixed ^
+      } ^
       "absolute uri 'http://www.example.org/hello/world.txt/?id=5&part=three'" ! {
         UriParser.parse("http://www.example.org/hello/world.txt/?id=5&part=three") must_== AbsoluteUri(
           Scheme("http"),
