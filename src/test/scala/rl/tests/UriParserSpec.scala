@@ -58,7 +58,7 @@ object UriParser {
       Some(Authority(theUri.getAuthority)), 
       parsePath(theUri.getPath),
       parseQueryString(theUri.getQuery),
-      StringFragment(theUri.getFragment),
+      parseFragment(theUri.getFragment),
       text
     )
   }
@@ -68,6 +68,11 @@ object UriParser {
   private def parseQueryString(text : String) : QueryString = {
     if (null == text || text.trim.size == 0) return EmptyQueryString
     MapQueryString(text)
+  }
+
+  private def parseFragment(text : String) : UriFragment = {
+    if (null == text || text.trim.size == 0) return EmptyFragment
+    StringFragment(text)
   }
 }
 
@@ -168,14 +173,14 @@ class UriParserSpec extends Specification {
           "http://www.example.org/hello/world.txt")
       }.pendingUntilFixed ^
       "absolute uri 'http://www.example.org/hello/world.txt/?id=5&part=three'" ! {
-        TestParser("http://www.example.org/hello/world.txt/?id=5&part=three", "http://www.example.org/hello/world.txt/?id=5&part=three") must_== AbsoluteUri(
+        UriParser.parse("http://www.example.org/hello/world.txt/?id=5&part=three") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), None)),
           AbsolutePath("hello" :: "world.txt" :: Nil),
           MapQueryString("id=5&part=three"),
           EmptyFragment,
           "http://www.example.org/hello/world.txt/?id=5&part=three")
-      }.pendingUntilFixed ^
+      } ^
       "absolute uri 'http://www.example.org/hello/world.txt/?id=5&part=three#there-you-go'" ! {
         UriParser.parse("http://www.example.org/hello/world.txt/?id=5&part=three#there-you-go") must_== AbsoluteUri(
           Scheme("http"),
