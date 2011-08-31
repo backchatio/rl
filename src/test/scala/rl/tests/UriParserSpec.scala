@@ -5,7 +5,7 @@ import collection.GenSeq
 
 import org.specs2.Specification
 import Uri._
-import java.net.{URI,URISyntaxException}
+import java.net.{URI,URISyntaxException,IDN}
 
 class NotImplementedException(msg: String) extends RuntimeException(msg)
 object TestParser {
@@ -59,10 +59,10 @@ object UriParser {
     } catch {
       case parseFail : URISyntaxException => return new FailedUri(parseFail, text)
     }
-    
+
     new AbsoluteUri(
       Scheme(theUri.getScheme), 
-      Some(Authority(theUri.getAuthority)), 
+      Some(Authority(IDN.toASCII(theUri.getAuthority))), 
       parsePath(theUri.getPath),
       parseQueryString(theUri.getQuery),
       parseFragment(theUri.getFragment),
@@ -111,7 +111,7 @@ class AboutAbsoluteUris extends Specification { def is=
           EmptyFragment,
           "http://www.example.org/")
       } ^
-      "absolute uri 'http://www.詹姆斯.org/'" ! {
+      "can handle internationalized domain names" ! {
         UriParser.parse("http://www.詹姆斯.org/") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.xn--8ws00zhy3a.org"), None)),
@@ -119,7 +119,7 @@ class AboutAbsoluteUris extends Specification { def is=
           EmptyQueryString,
           EmptyFragment,
           "http://www.詹姆斯.org/")
-      }.pendingUntilFixed ^
+      } ^
       "returns the path split into fragments" ! {
         UriParser.parse("http://www.example.org/hello/world.txt") must_== AbsoluteUri(
           Scheme("http"),
