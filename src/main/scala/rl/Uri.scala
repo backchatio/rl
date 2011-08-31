@@ -1,10 +1,8 @@
 package rl
 
-import util.parsing.combinator._
-import rl.UrlCodingUtils._
-import rl.UriPath._
+
 import java.lang.{ UnsupportedOperationException, Boolean }
-import java.net.{ URISyntaxException, IDN, URI }
+import java.net.{ URISyntaxException }
 
 trait UriNode {
   def uriPart: String
@@ -88,27 +86,27 @@ object Uri {
 
   def apply(uriString: String) = {
     try {
-      val parsed = URI.create(uriString)
-      val pth = parsed.getRawPath.toOption match {
+      val UriParts(_, sch, auth2, auth, rawPath, _, qry, _, frag) = uriString
+      val pth = rawPath.toOption match {
         case None                           ⇒ EmptyPath
         case Some(pt) if pt.startsWith("/") ⇒ AbsolutePath(pt.split("/"))
         case Some(pt)                       ⇒ RelativePath(pt.split("/"))
       }
 
-      if (parsed.isAbsolute) {
+      if (auth2.startsWith("/")) {
         val r = AbsoluteUri(
-          Scheme(parsed.getScheme),
-          Some(Authority(parsed.getRawAuthority)),
+          Scheme(sch),
+          Some(Authority(auth)),
           pth,
-          QueryString(parsed.getRawQuery),
-          UriFragment(parsed.getRawFragment))
+          QueryString(qry),
+          UriFragment(frag))
         r
       } else {
         val r = RelativeUri(
-          Some(Authority(parsed.getRawAuthority)),
+          Some(Authority(auth)),
           pth,
-          QueryString(parsed.getRawQuery),
-          UriFragment(parsed.getRawFragment))
+          QueryString(qry),
+          UriFragment(frag))
         r
       }
     } catch {
