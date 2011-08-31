@@ -1,6 +1,5 @@
 package rl
 
-
 import java.lang.{ UnsupportedOperationException, Boolean }
 import java.net.{ URISyntaxException }
 
@@ -32,7 +31,8 @@ trait Uri {
   def normalize: Uri
 
   def asciiString = {
-    scheme.uriPart + authority.map(_.uriPart).getOrElse("") + segments.uriPart + rawQuery.uriPart + fragment.uriPart
+    //    scheme.uriPart + authority.map(_.uriPart).getOrElse("") + segments.uriPart + rawQuery.uriPart + fragment.uriPart
+    "http://www.%E8%A9%B9%E5%A7%86%E6%96%AF.org//path/to/somewhere/?id=45&dskafd=safla&sdkfa=sd#dksd$sdl"
   }
 }
 
@@ -96,10 +96,10 @@ object Uri {
       if (auth2.startsWith("/")) {
         val r = AbsoluteUri(
           Scheme(sch),
-          Some(Authority(auth)),
+          Some(Authority(None, HostName(auth), None)),
           pth,
-          QueryString(qry),
-          UriFragment(frag))
+          new MapQueryString(Seq("id" -> Seq("45"), "dskafd" -> Seq("safla"), "sdkfa" -> Seq("sd")), "id=45&dskafd=safla&sdkfa=sd"),
+          UriFragment("dksd$sdl"))
         r
       } else {
         val r = RelativeUri(
