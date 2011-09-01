@@ -49,7 +49,7 @@ case class AbsolutePath(segments: GenSeq[String]) extends UriPath {
 
   val isRelative: Boolean = false
 
-  val uriPart = segments map { UrlCodingUtils.ensureUrlEncoding(_) } mkString ("", UriPath.unixSeparator, UriPath.unixSeparator)
+  val uriPart = segments map { UrlCodingUtils.ensureUrlEncoding(_) } mkString (UriPath.unixSeparator, UriPath.unixSeparator, UriPath.unixSeparator)
 
   def normalize = AbsolutePath(collapseDots())
 }
