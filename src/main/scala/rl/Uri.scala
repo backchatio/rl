@@ -1,7 +1,7 @@
 package rl
 
 import java.lang.{ UnsupportedOperationException, Boolean }
-import java.net.{ URISyntaxException }
+import java.net.{ URISyntaxException, IDN }
 
 trait UriNode {
   def uriPart: String
@@ -86,26 +86,25 @@ object Uri {
   def apply(uriString: String) = {
     try {
       val UriParts(_, sch, auth2, auth, rawPath, _, qry, _, frag) = uriString
-      val pth = rawPath.toOption match {
-        case None                           ⇒ EmptyPath
-        case Some(pt) if pt.startsWith("/") ⇒ AbsolutePath(pt.split("/"))
-        case Some(pt)                       ⇒ RelativePath(pt.split("/"))
-      }
+
+      val pth = parsePath(rawPath.toOption)
 
       if (auth2.startsWith("/")) {
         val r = AbsoluteUri(
           Scheme(sch),
-          Some(Authority(auth)),
+          Some(Authority(IDN.toASCII(auth))),
           pth,
           QueryString(qry),
-          UriFragment(frag))
+          UriFragment(frag),
+          uriString)
         r
       } else {
         val r = RelativeUri(
-          Some(Authority(auth)),
+          Some(Authority(IDN.toASCII(auth))),
           pth,
           QueryString(qry),
-          UriFragment(frag))
+          UriFragment(frag),
+          uriString)
         r
       }
     } catch {
@@ -121,4 +120,12 @@ object Uri {
     }
   }
 
+  private def parsePath(text: Option[String]): UriPath = {
+    text match {
+      case None                           ⇒ EmptyPath
+      case Some(pt) if pt.trim == "/"     ⇒ EmptyPath
+      case Some(pt) if pt.startsWith("/") ⇒ AbsolutePath(pt.split("/").drop(1).toList)
+      case Some(pt)                       ⇒ RelativePath(pt.split("/"))
+    }
+  }
 }

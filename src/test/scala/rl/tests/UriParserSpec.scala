@@ -50,51 +50,15 @@ object TestParser {
   }
 }
 
-object UriParser {
-  def parse(text : String) : Uri = {
-    var theUri : URI = null
-
-    try {
-      theUri = new URI(text)
-    } catch {
-      case parseFail : URISyntaxException => return new FailedUri(parseFail, text)
-    }
-
-    new AbsoluteUri(
-      Scheme(theUri.getScheme), 
-      Some(Authority(IDN.toASCII(theUri.getAuthority))), 
-      parsePath(theUri.getPath),
-      parseQueryString(theUri.getQuery),
-      parseFragment(theUri.getFragment),
-      text
-    )
-  }
-
-  private def parsePath(text : String) : UriPath = { 
-    val isEmptyPath = null == text || text.trim.size == 0 || text == "/"
-    if (isEmptyPath) EmptyPath else AbsolutePath(text.split("/").drop(1).toList)  
-  }
-
-  private def parseQueryString(text : String) : QueryString = {
-    if (null == text || text.trim.size == 0) return EmptyQueryString
-    MapQueryString(text)
-  }
-
-  private def parseFragment(text : String) : UriFragment = {
-    if (null == text || text.trim.size == 0) return EmptyFragment
-    StringFragment(text)
-  }
-}
-
 class AboutAbsoluteUris extends Specification { def is= 
   "when parsing a full uri, a UriParser" ^
     "returns a failure when hostname contains a space" ! {
-        val res = UriParser.parse("http://www.exa mple.org")
+        val res = Uri("http://www.exa mple.org")
         res must beAnInstanceOf[FailedUri]
         res.originalUri must_== "http://www.exa mple.org"
       } ^
       "returns the port" ! {
-        UriParser.parse("http://www.example.org:8080") must_== AbsoluteUri(
+        Uri("http://www.example.org:8080") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), Some(8080))),
           EmptyPath,
@@ -103,7 +67,7 @@ class AboutAbsoluteUris extends Specification { def is=
           "http://www.example.org:8080")
       } ^
       "returns the hostname" ! {
-        UriParser.parse("http://www.example.org/") must_== AbsoluteUri(
+        Uri("http://www.example.org/") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), None)),
           EmptyPath,
@@ -112,7 +76,7 @@ class AboutAbsoluteUris extends Specification { def is=
           "http://www.example.org/")
       } ^
       "can handle internationalized domain names" ! {
-        UriParser.parse("http://www.詹姆斯.org/") must_== AbsoluteUri(
+        Uri("http://www.詹姆斯.org/") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.xn--8ws00zhy3a.org"), None)),
           EmptyPath,
@@ -121,7 +85,7 @@ class AboutAbsoluteUris extends Specification { def is=
           "http://www.詹姆斯.org/")
       } ^
       "returns the path split into fragments" ! {
-        UriParser.parse("http://www.example.org/hello/world.txt") must_== AbsoluteUri(
+        Uri("http://www.example.org/hello/world.txt") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), None)),
           AbsolutePath("hello" :: "world.txt" :: Nil),
@@ -130,7 +94,7 @@ class AboutAbsoluteUris extends Specification { def is=
           "http://www.example.org/hello/world.txt")
       } ^
       "returns query string" ! {
-        UriParser.parse("http://www.example.org/hello/world.txt/?id=5&part=three") must_== AbsoluteUri(
+        Uri("http://www.example.org/hello/world.txt/?id=5&part=three") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), None)),
           AbsolutePath("hello" :: "world.txt" :: Nil),
@@ -139,7 +103,7 @@ class AboutAbsoluteUris extends Specification { def is=
           "http://www.example.org/hello/world.txt/?id=5&part=three")
       } ^
       "returns query string and fragment" ! {
-        UriParser.parse("http://www.example.org/hello/world.txt/?id=5&part=three#there-you-go") must_== AbsoluteUri(
+        Uri("http://www.example.org/hello/world.txt/?id=5&part=three#there-you-go") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), None)),
           AbsolutePath("hello" :: "world.txt" :: Nil),
@@ -148,7 +112,7 @@ class AboutAbsoluteUris extends Specification { def is=
           "http://www.example.org/hello/world.txt/?id=5&part=three#there-you-go")
       } ^
       "returns fragment when URI has no query string" ! {
-        UriParser.parse("http://www.example.org/hello/world.txt/#here-we-are") must_== AbsoluteUri(
+        Uri("http://www.example.org/hello/world.txt/#here-we-are") must_== AbsoluteUri(
           Scheme("http"),
           Some(Authority(None, HostName("www.example.org"), None)),
           AbsolutePath("hello" :: "world.txt" :: Nil),
