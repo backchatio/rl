@@ -88,7 +88,7 @@ case class MapQueryString(initialValues: Seq[(String, Seq[String])], rawValue: S
 
   def value: Value = Map(initialValues: _*)
 
-  def normalize = copy(SortedMap(initialValues: _*) filterKeys (k ⇒ !QueryString.DEFAULT_EXCLUSIONS.contains(k)) toSeq)
+  def normalize = copy(SortedMap(initialValues filter (k ⇒ !QueryString.DEFAULT_EXCLUSIONS.contains(k._1)): _*) toSeq)
 
   private def mkString(values: Value = value) = values map {
     case (k, v) ⇒ v.map(s ⇒ "%s=%s".format(k.urlEncode, s.urlEncode)).mkString("&")

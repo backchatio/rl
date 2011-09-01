@@ -1,6 +1,5 @@
 package rl
 
-
 import java.lang.{ UnsupportedOperationException, Boolean }
 import java.net.{ URISyntaxException }
 

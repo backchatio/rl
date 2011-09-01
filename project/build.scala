@@ -50,7 +50,7 @@ object RlSettings {
   val description = SettingKey[String]("description")
 
   val compilerPlugins = Seq(
-    compilerPlugin("org.scala-lang.plugins" % "continuations" % "2.9.1"),
+    compilerPlugin("org.scala-lang.plugins" % "continuations" % buildScalaVersion),
     compilerPlugin("org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7")
   )
 
@@ -74,6 +74,7 @@ object RlSettings {
       resolvers ++= Seq(
         "ScalaTools Snapshots" at "http://scala-tools.org/repo-snapshots"
       ),
+      crossScalaVersions := Seq("2.9.1", "2.9.0-1"),
       (defaultExcludes in formatSources) <<= (defaultExcludes) (_ || "*Spec.scala"),
       libraryDependencies ++= compilerPlugins,
       autoCompilerPlugins := true,
