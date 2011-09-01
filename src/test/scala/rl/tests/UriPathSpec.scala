@@ -2,6 +2,7 @@ package rl
 package tests
 
 import org.specs2.Specification
+import org.specs2.matcher._
 
 class UriPathSpec extends Specification {
   def is =
@@ -27,4 +28,17 @@ class UriPathSpec extends Specification {
   def normalizeSpacesInPath = {
     UriPath.windowsToUnixPath("C:\\Windows\\Program Files\\blah.txt") must_== "file:///C:/Windows/Program%20Files/blah.txt"
   }
+}
+
+class AboutAbsolutePaths extends Specification with DataTables with ResultMatchers { def is =
+  "Absolute paths" ^
+  "always start and end with a slash unless they are empty" ! {
+    val empty : List[String] = List()
+    
+    "path segments"          | "expected" |>
+     empty              !  ""        |
+     List("a")          !  "/a/"     |
+     List("a", "b")     !  "/a/b/"   |
+     { (segments, expected) => AbsolutePath(segments).uriPart must_== expected }
+  } ^ end
 }
