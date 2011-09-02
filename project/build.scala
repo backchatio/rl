@@ -69,7 +69,7 @@ object RlSettings {
         "-encoding", "utf8",
         "-P:continuations:enable"),
       libraryDependencies ++= Seq(
-        "org.specs2" %% "specs2" % "1.6-SNAPSHOT" % "test"
+        "org.specs2" %% "specs2" % "1.5" % "test"
       ),
       resolvers ++= Seq(
         "ScalaTools Snapshots" at "http://scala-tools.org/repo-snapshots"
