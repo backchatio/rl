@@ -1,5 +1,4 @@
-package rl
-package tests
+package rl.tests.rfc_3986
 
 import org.specs2.Specification
 import org.specs2.execute._
@@ -8,7 +7,7 @@ import rl.UrlCodingUtils._
 class Section_2_1_percent_encoding extends Specification {
   def is =
     "Section 2.1 Percent-Encoding" ^
-     """A percent-encoded octet is encoded as a character
+      """A percent-encoded octet is encoded as a character
      triplet, consisting of the percent character "%" followed by the two
      hexadecimal digits representing that octet's numeric value""" ! {
         val space = " "
@@ -36,10 +35,11 @@ class Section_2_1_percent_encoding extends Specification {
       } ^ end
 }
 
-class Section_2_4_when_to_encode_or_decode extends Specification { def is = 
-  "When to encode or decode" ^ 
-    "Percent encoding percent (%25)" ! {
-      urlEncode("%") must_== "%25"       
-    } ^
-  end
+class Section_2_4_when_to_encode_or_decode extends Specification {
+  def is =
+    "When to encode or decode" ^
+      "Percent encoding percent (%25)" ! {
+        urlEncode("%") must_== "%25"
+      } ^
+      end
 }
