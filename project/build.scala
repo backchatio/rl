@@ -68,9 +68,10 @@ object RlSettings {
         "-Xcheckinit",
         "-encoding", "utf8",
         "-P:continuations:enable"),
-      libraryDependencies ++= Seq(
-        "org.specs2" %% "specs2" % "1.5" % "test"
-      ),
+      libraryDependencies <+= (scalaVersion) {
+        case "2.9.0-1" => "org.specs2" %% "specs2" % "1.5" % "test"
+        case _ => "org.specs2" %% "specs2" % "1.6" % "test"
+      },
       resolvers ++= Seq(
         "ScalaTools Snapshots" at "http://scala-tools.org/repo-snapshots"
       ),
