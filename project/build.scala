@@ -72,9 +72,11 @@ object RlSettings {
         case "2.9.0-1" => "org.specs2" %% "specs2" % "1.5" % "test"
         case _ => "org.specs2" %% "specs2" % "1.6.1" % "test"
       },
+      libraryDependencies += "org.parboiled" % "parboiled-scala" % "1.0.1",
       resolvers ++= Seq(
         "ScalaTools Snapshots" at "http://scala-tools.org/repo-snapshots"
       ),
+      retrieveManaged := true,
       crossScalaVersions := Seq("2.9.1", "2.9.0-1"),
       (defaultExcludes in formatSources) <<= (defaultExcludes) (_ || "*Spec.scala"),
       libraryDependencies ++= compilerPlugins,
