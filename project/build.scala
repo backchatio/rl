@@ -1,5 +1,6 @@
 import sbt._
 import Keys._
+import com.typesafe.sbtscalariform._
 import ScalariformPlugin._
 
 // Shell prompt which show the current project, git branch and build version
@@ -78,7 +79,7 @@ object RlSettings {
       ),
       retrieveManaged := true,
       crossScalaVersions := Seq("2.9.1", "2.9.0-1"),
-      (defaultExcludes in formatSources) <<= (defaultExcludes) (_ || "*Spec.scala"),
+      (excludeFilter in formatSources) <<= (excludeFilter) (_ || "*Spec.scala"),
       libraryDependencies ++= compilerPlugins,
       autoCompilerPlugins := true,
       parallelExecution in Test := false,
