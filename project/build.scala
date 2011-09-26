@@ -30,7 +30,7 @@ object ShellPrompt {
 object RlSettings {
   val buildOrganization = "com.mojolly.rl"
   val buildScalaVersion = "2.9.1"
-  val buildVersion      = "0.2-SNAPSHOT"
+  val buildVersion      = "0.2.1-SNAPSHOT"
 
   lazy val formatSettings = ScalariformPlugin.settings ++ Seq(
     formatPreferences in Compile := formattingPreferences,
