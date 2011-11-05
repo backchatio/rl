@@ -106,9 +106,6 @@ object RlSettings {
           "Implementation-Vendor" -> "Mojolly Ltd.",
           "Implementation-Url" -> "https://backchat.io"
          )
-    },
-    pomExtra <<= (pomExtra, name, description) { (extra, title, desc) => extra ++ Seq(
-      <name>{title}</name>, <description>{desc}</description>)
     })
  
   val projectSettings = buildSettings ++ packageSettings
