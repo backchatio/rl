@@ -38,7 +38,7 @@ object Scheme {
     "mongo" -> 27017)
 }
 case class Scheme(scheme: String) extends UriScheme {
-  val uriPart = scheme.toOption map { _ + ":" } getOrElse ""
+  val uriPart = scheme.blankOpt map { _ + ":" } getOrElse ""
 
   def normalize = copy(scheme.toLowerCase(ENGLISH))
 }

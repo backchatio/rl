@@ -2,6 +2,7 @@ import sbt._
 import Keys._
 import com.typesafe.sbtscalariform._
 import ScalariformPlugin._
+import ScalariformKeys._
 
 // Shell prompt which show the current project, git branch and build version
 // git magic from Daniel Sobral, adapted by Ivan Porto Carrero to also work with git flow branches
@@ -30,11 +31,11 @@ object ShellPrompt {
 object RlSettings {
   val buildOrganization = "com.mojolly.rl"
   val buildScalaVersion = "2.9.1"
-  val buildVersion      = "0.2.1-SNAPSHOT"
+  val buildVersion      = "0.2.3-SNAPSHOT"
 
-  lazy val formatSettings = ScalariformPlugin.settings ++ Seq(
-    formatPreferences in Compile := formattingPreferences,
-    formatPreferences in Test    := formattingPreferences
+  lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(
+    preferences in Compile := formattingPreferences,
+    preferences in Test    := formattingPreferences
   )
 
   def formattingPreferences = {
@@ -71,16 +72,20 @@ object RlSettings {
         "-P:continuations:enable"),
       libraryDependencies <+= (scalaVersion) {
         case "2.9.0-1" => "org.specs2" %% "specs2" % "1.5" % "test"
-        case _ => "org.specs2" %% "specs2" % "1.6.1" % "test"
+        case _ => "org.specs2" %% "specs2" % "1.7.1" % "test"
       },
       libraryDependencies += "org.parboiled" % "parboiled-scala" % "1.0.2",
+      libraryDependencies += "com.github.scala-incubator.io" %% "scala-io-core" % "0.3.0",
       resolvers ++= Seq(
         "ScalaTools Snapshots" at "http://scala-tools.org/repo-snapshots"
       ),
       retrieveManaged := true,
       crossScalaVersions := Seq("2.9.1", "2.9.0-1"),
-      (excludeFilter in formatSources) <<= (excludeFilter) (_ || "*Spec.scala"),
+      (excludeFilter in format) <<= (excludeFilter) (_ || "*Spec.scala"),
       libraryDependencies ++= compilerPlugins,
+      artifact in (Compile, packageBin) ~= { (art: Artifact) =>
+        if (sys.props("java.version") startsWith "1.7") art.copy(classifier = Some("jdk17")) else art
+      },
       autoCompilerPlugins := true,
       parallelExecution in Test := false,
       publishTo <<= (version) { version: String => 

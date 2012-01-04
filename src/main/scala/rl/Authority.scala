@@ -4,7 +4,7 @@ import java.net._
 
 object UserInfo {
   def apply(userInfo: String): Option[UserInfo] = {
-    userInfo.toOption map { uif ⇒
+    userInfo.blankOpt map { uif ⇒
       val Array(user, secret) = if (uif.indexOf(":") > -1) (uif.toString split ':') else Array(uif, "")
       UserInfo(user, secret)
     }
@@ -12,7 +12,7 @@ object UserInfo {
 }
 case class UserInfo(user: String, secret: String) extends UriNode {
   val uriPart = toString + "@"
-  override def toString = (user /: secret.toOption) { _ + ":" + _ }
+  override def toString = (user /: secret.blankOpt) { _ + ":" + _ }
 
   def normalize = this
 }
@@ -54,8 +54,8 @@ case class HostName(value: String) extends UriHost {
   val uriPart = UrlCodingUtils.ensureUrlEncoding(value)
 
   override def normalize = {
-    val va = if (value.startsWith("www.")) value.substring(4) else value
-    val punycode = IDN.toASCII(va)
+    // val va = if (value.startsWith("www.")) value.substring(4) else value
+    val punycode = IDN.toASCII(value)
     new HostName(punycode) with UriHostDomains {
       protected val parsed = DomainParser(this.value)
     }

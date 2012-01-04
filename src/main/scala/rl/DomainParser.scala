@@ -1,6 +1,6 @@
 package rl
 
-import io.Source
+import scalax.io.Resource
 
 trait UriHostDomains { self: UriHost ⇒
   protected def parsed: (String, String, String)
@@ -12,10 +12,10 @@ trait UriHostDomains { self: UriHost ⇒
 object DomainParser {
 
   lazy val publicSuffixes = {
-    val src = Source.fromInputStream(getClass.getClassLoader.getResourceAsStream("rl/tld_names.dat"))
+    val src = Resource.fromInputStream(getClass.getClassLoader.getResourceAsStream("rl/tld_names.dat"))
 
-    src.getLines.foldLeft(PublicSuffixList.empty) { (buff, line) ⇒
-      line.toOption filter (l ⇒ !l.startsWith("//")) map { l ⇒
+    src.lines().foldLeft(PublicSuffixList.empty) { (buff, line) ⇒
+      line.blankOpt filter (l ⇒ !l.startsWith("//")) map { l ⇒
         val parts = l.split("\\.").reverse
         parts.foldLeft(buff) (_ :+ _)
         buff

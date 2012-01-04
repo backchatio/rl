@@ -7,7 +7,7 @@ object QueryString {
   val DEFAULT_EXCLUSIONS = List("utm_source", "utm_medium", "utm_term", "utm_content", "utm_campaign", "sms_ss", "awesm")
 
   def apply(rawValue: String) = {
-    rawValue.toOption map { v ⇒
+    rawValue.blankOpt map { v ⇒
       (v.indexOf('&') > -1, v.indexOf('=') > -1) match {
         case (true, true) | (false, true) ⇒ MapQueryString(v)
         case (true, false)                ⇒ StringSeqQueryString(v)

@@ -54,7 +54,7 @@ case class RelativeUri(authority: Option[Authority], segments: UriPath, rawQuery
 case class FailedUri(throwable: Throwable, originalUri: String = "") extends Uri {
 
   private def noop = {
-    val u = originalUri.toOption getOrElse "not set"
+    val u = originalUri.blankOpt getOrElse "not set"
     throw new UnsupportedOperationException("Parsing the uri '%s' failed." format u, throwable)
   }
 
@@ -87,7 +87,7 @@ object Uri {
     try {
       val UriParts(_, sch, auth2, auth, rawPath, _, qry, _, frag) = uriString
 
-      val pth = parsePath(rawPath.toOption)
+      val pth = parsePath(rawPath.blankOpt)
 
       if (auth2.startsWith("/")) {
         val r = AbsoluteUri(

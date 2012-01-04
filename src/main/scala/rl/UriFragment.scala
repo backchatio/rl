@@ -1,7 +1,7 @@
 package rl
 
 object UriFragment {
-  def apply(rawValue: String) = rawValue.toOption map { StringFragment(_) } getOrElse EmptyFragment
+  def apply(rawValue: String) = rawValue.blankOpt map { StringFragment(_) } getOrElse EmptyFragment
 }
 trait UriFragment extends UriNode {
   type Value
@@ -21,7 +21,7 @@ case object EmptyFragment extends UriFragment {
   type Value = String
 }
 case class StringFragment(rawValue: String) extends UriFragment {
-  def uriPart = value.toOption map { "#" + _ } getOrElse ""
+  def uriPart = value.blankOpt map { "#" + _ } getOrElse ""
 
   val value = rawValue
 
