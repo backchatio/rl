@@ -1,8 +1,8 @@
 import sbt._
 import Keys._
-import com.typesafe.sbtscalariform._
-import ScalariformPlugin._
-import ScalariformKeys._
+// import com.typesafe.sbtscalariform._
+// import ScalariformPlugin._
+// import ScalariformKeys._
 
 // Shell prompt which show the current project, git branch and build version
 // git magic from Daniel Sobral, adapted by Ivan Porto Carrero to also work with git flow branches
@@ -33,21 +33,21 @@ object RlSettings {
   val buildScalaVersion = "2.9.1"
   val buildVersion      = "0.2.3-SNAPSHOT"
 
-  lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(
-    preferences in Compile := formattingPreferences,
-    preferences in Test    := formattingPreferences
-  )
+  // lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(
+  //   preferences in Compile := formattingPreferences,
+  //   preferences in Test    := formattingPreferences
+  // )
 
-  def formattingPreferences = {
-    import scalariform.formatter.preferences._
-    (FormattingPreferences()
-        setPreference(IndentSpaces, 2)
-        setPreference(AlignParameters, true)
-        setPreference(AlignSingleLineCaseStatements, true)
-        setPreference(DoubleIndentClassDeclaration, true)
-        setPreference(RewriteArrowSymbols, true)
-        setPreference(PreserveSpaceBeforeArguments, true))
-  }
+  // def formattingPreferences = {
+  //   import scalariform.formatter.preferences._
+  //   (FormattingPreferences()
+  //       setPreference(IndentSpaces, 2)
+  //       setPreference(AlignParameters, true)
+  //       setPreference(AlignSingleLineCaseStatements, true)
+  //       setPreference(DoubleIndentClassDeclaration, true)
+  //       setPreference(RewriteArrowSymbols, true)
+  //       setPreference(PreserveSpaceBeforeArguments, true))
+  // }
 
   val description = SettingKey[String]("description")
 
@@ -56,7 +56,7 @@ object RlSettings {
     compilerPlugin("org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7")
   )
 
-  val buildSettings = Defaults.defaultSettings ++ formatSettings ++ Seq(
+  val buildSettings = Defaults.defaultSettings ++ Seq(
       name := "rl",
       version := buildVersion,
       organization := buildOrganization,
@@ -81,7 +81,7 @@ object RlSettings {
       ),
       retrieveManaged := true,
       crossScalaVersions := Seq("2.9.1", "2.9.0-1"),
-      (excludeFilter in format) <<= (excludeFilter) (_ || "*Spec.scala"),
+      // (excludeFilter in format) <<= (excludeFilter) (_ || "*Spec.scala"),
       libraryDependencies ++= compilerPlugins,
       artifact in (Compile, packageBin) ~= { (art: Artifact) =>
         if (sys.props("java.version") startsWith "1.7") art.copy(classifier = Some("jdk17")) else art
@@ -93,7 +93,7 @@ object RlSettings {
         if (version.trim.endsWith("SNAPSHOT")) Some("snapshots" at nexus+"snapshots/") 
         else                                   Some("releases" at nexus+"releases/")
       },
-      shellPrompt  := ShellPrompt.buildShellPrompt)
+      shellPrompt  := ShellPrompt.buildShellPrompt) //++ formatSettings
 
   val packageSettings = Seq (
     packageOptions <<= (packageOptions, name, version, organization) map {
@@ -131,7 +131,6 @@ object RlBuild extends Build {
       domFile
     },
     (compile in Compile) <<= (compile in Compile) dependsOn downloadDomainFile,
-    unmanagedClasspath in Compile += Attributed.blank(new java.io.File("doesnotexist")), // work-around for documentation bug
     description := "An RFC-3986 compliant URI library."))
   
 }
