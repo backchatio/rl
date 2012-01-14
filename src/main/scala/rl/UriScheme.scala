@@ -5,6 +5,8 @@ import java.util.Locale.ENGLISH
 trait UriScheme extends UriNode {
   def scheme: String
   def normalize: UriScheme
+
+  def apply() = scheme
 }
 case object NoScheme extends UriScheme {
   val scheme = ""
@@ -38,7 +40,7 @@ object Scheme {
     "mongo" -> 27017)
 }
 case class Scheme(scheme: String) extends UriScheme {
-  val uriPart = scheme.blankOpt map { _ + ":" } getOrElse ""
+  val uriPart = scheme.blankOption map { _ + ":" } getOrElse ""
 
   def normalize = copy(scheme.toLowerCase(ENGLISH))
 }

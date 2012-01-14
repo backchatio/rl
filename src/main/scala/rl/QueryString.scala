@@ -7,7 +7,7 @@ object QueryString {
   val DEFAULT_EXCLUSIONS = List("utm_source", "utm_medium", "utm_term", "utm_content", "utm_campaign", "sms_ss", "awesm")
 
   def apply(rawValue: String) = {
-    rawValue.blankOpt map { v ⇒
+    rawValue.blankOption map { v ⇒
       (v.indexOf('&') > -1, v.indexOf('=') > -1) match {
         case (true, true) | (false, true) ⇒ MapQueryString(v)
         case (true, false)                ⇒ StringSeqQueryString(v)
@@ -23,6 +23,8 @@ trait QueryString extends UriNode {
   def empty: Value
 
   def normalize: QueryString
+
+  def apply() = rawValue.urlEncode
 }
 case object EmptyQueryString extends QueryString {
 

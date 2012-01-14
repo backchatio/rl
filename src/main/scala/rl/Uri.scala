@@ -6,6 +6,8 @@ import java.net.{ URISyntaxException, IDN }
 trait UriNode {
   def uriPart: String
   def normalize: UriNode
+
+  def apply(): String
 }
 
 trait UriOperations {
@@ -14,16 +16,21 @@ trait UriOperations {
   def /(other: Uri): Uri
 }
 
-trait MonadicUri {
-
-}
 
 trait Uri {
   def scheme: UriScheme
   def authority: Option[Authority]
   def segments: UriPath
-  def rawQuery: QueryString
+  def query: QueryString
   def fragment: UriFragment
+  
+  lazy val user = authority flatMap (_.userInfo map (_.user))
+  lazy val secret = authority flatMap (_.userInfo map (_.secret))
+  lazy val host = authority map (_.host.value)
+  lazy val port = authority map (_.port)
+  lazy val path = segments()
+  lazy val queryString = query()
+  lazy val rawQuery = query.rawValue
 
   def originalUri: String
   def isAbsolute: Boolean
@@ -31,36 +38,37 @@ trait Uri {
   def normalize: Uri
 
   def asciiString = {
-    scheme.uriPart + authority.map(_.uriPart).getOrElse("") + segments.uriPart + rawQuery.uriPart + fragment.uriPart
+    scheme.uriPart + authority.map(_.uriPart).getOrElse("") + segments.uriPart + query.uriPart + fragment.uriPart
   }
 }
 
-case class AbsoluteUri(scheme: Scheme, authority: Option[Authority], segments: UriPath, rawQuery: QueryString, fragment: UriFragment, originalUri: String = "") extends Uri {
+case class AbsoluteUri(scheme: Scheme, authority: Option[Authority], segments: UriPath, query: QueryString, fragment: UriFragment, originalUri: String = "") extends Uri {
   val isAbsolute: Boolean = true
   val isRelative: Boolean = false
+  
 
-  def normalize = copy(scheme.normalize, authority.map(_.normalize), segments.normalize, rawQuery.normalize, fragment.normalize)
+  def normalize = copy(scheme.normalize, authority.map(_.normalize), segments.normalize, query.normalize, fragment.normalize)
 }
 
-case class RelativeUri(authority: Option[Authority], segments: UriPath, rawQuery: QueryString, fragment: UriFragment, originalUri: String = "") extends Uri {
+case class RelativeUri(authority: Option[Authority], segments: UriPath, query: QueryString, fragment: UriFragment, originalUri: String = "") extends Uri {
   val scheme = NoScheme
 
   val isAbsolute: Boolean = false
   val isRelative: Boolean = true
 
-  def normalize = copy(authority.map(_.normalize), segments.normalize, rawQuery.normalize, fragment.normalize)
+  def normalize = copy(authority.map(_.normalize), segments.normalize, query.normalize, fragment.normalize)
 }
 
 case class FailedUri(throwable: Throwable, originalUri: String = "") extends Uri {
 
   private def noop = {
-    val u = originalUri.blankOpt getOrElse "not set"
+    val u = originalUri.blankOption getOrElse "not set"
     throw new UnsupportedOperationException("Parsing the uri '%s' failed." format u, throwable)
   }
 
   def fragment = noop
 
-  def rawQuery = noop
+  def query = noop
 
   def segments = noop
 
@@ -87,7 +95,7 @@ object Uri {
     try {
       val UriParts(_, sch, auth2, auth, rawPath, _, qry, _, frag) = uriString
 
-      val pth = parsePath(rawPath.blankOpt)
+      val pth = parsePath(rawPath.blankOption)
 
       if (auth2.startsWith("/")) {
         val r = AbsoluteUri(

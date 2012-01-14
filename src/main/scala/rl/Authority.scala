@@ -4,7 +4,7 @@ import java.net._
 
 object UserInfo {
   def apply(userInfo: String): Option[UserInfo] = {
-    userInfo.blankOpt map { uif ⇒
+    userInfo.blankOption map { uif ⇒
       val Array(user, secret) = if (uif.indexOf(":") > -1) (uif.toString split ':') else Array(uif, "")
       UserInfo(user, secret)
     }
@@ -12,9 +12,10 @@ object UserInfo {
 }
 case class UserInfo(user: String, secret: String) extends UriNode {
   val uriPart = toString + "@"
-  override def toString = (user /: secret.blankOpt) { _ + ":" + _ }
+  override def toString = (user /: secret.blankOption) { _ + ":" + _ }
 
   def normalize = this
+  def apply() = toString
 }
 
 object Authority {
@@ -36,6 +37,8 @@ object Authority {
 sealed trait UriHost extends UriNode {
   def value: String
   def normalize: UriHost with UriHostDomains
+
+  def apply() = value
 }
 
 class EmptyHost extends UriHost {
@@ -97,5 +100,7 @@ case class Authority(userInfo: Option[UserInfo], host: UriHost, port: Option[Int
   override def toString = {
     (userInfo map { _.uriPart } getOrElse "") + host.uriPart + (port map { ":" + _ } getOrElse "") //expresses intent better
   }
+
+  def apply() = toString
 }
 

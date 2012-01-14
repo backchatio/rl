@@ -15,7 +15,7 @@ object DomainParser {
     val src = Resource.fromInputStream(getClass.getClassLoader.getResourceAsStream("rl/tld_names.dat"))
 
     src.lines().foldLeft(PublicSuffixList.empty) { (buff, line) ⇒
-      line.blankOpt filter (l ⇒ !l.startsWith("//")) map { l ⇒
+      line.blankOption filter (l ⇒ !l.startsWith("//")) map { l ⇒
         val parts = l.split("\\.").reverse
         parts.foldLeft(buff) (_ :+ _)
         buff

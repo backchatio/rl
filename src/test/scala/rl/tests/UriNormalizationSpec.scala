@@ -17,18 +17,18 @@ class UriNormalizationSpec extends Specification {
         val hwd = host.asInstanceOf[UriHost with UriHostDomains]
         (hwd.domain must_== "mojolly") and (hwd.subdomain must_== "builds") and (hwd.publicSuffix must_== "com")
       } ^
-      "remove www from the domain" ! {
-        Uri("http://www.example.org/path/to").normalize.authority.get.host.value must_== "example.org"
-      } ^
+//      "remove www from the domain" ! {
+//        Uri("http://www.example.org/path/to").normalize.authority.get.host.value must_== "example.org"
+//      } ^
       "collapse the dots out of a path" ! {
         Uri("http://backchat.io/path/././to/../blah").normalize.segments.uriPart must_== "/path/blah/"
       } ^
       "sort the query string parameters alphabetically" ! {
         val expected = "?aaa=958&kkk=495&www=9485&zzz=123"
-        Uri("http://localhost/?zzz=123&kkk=495&www=9485&aaa=958").normalize.rawQuery.uriPart must_== expected
+        Uri("http://localhost/?zzz=123&kkk=495&www=9485&aaa=958").normalize.query.uriPart must_== expected
       } ^
       "remove common query string parameters" ! {
         val expected = "?aaa=958&kkk=495&www=9485&zzz=123"
-        Uri("http://localhost/?zzz=123&kkk=495&www=9485&aaa=958&utm_source=3958").normalize.rawQuery.uriPart must_== expected
+        Uri("http://localhost/?zzz=123&kkk=495&www=9485&aaa=958&utm_source=3958").normalize.query.uriPart must_== expected
       } ^ end
 }

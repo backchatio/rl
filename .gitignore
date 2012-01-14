@@ -30,3 +30,8 @@ project/target
 project/boot
 
 rl.sublime-project
+.cache
+.classpath
+.project
+.settings
+.target
