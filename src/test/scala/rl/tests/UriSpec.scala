@@ -21,7 +21,7 @@ class UriSpec extends Specification { def is =
   def parseRelativeAuthority = {
     val u = Uri("//localhost/blah")
 
-    u.scheme() must beNull and
+    u.scheme() must_== "" and
     (u.host must beSome("localhost")) and
     (u.path must_== "/blah/")
   }

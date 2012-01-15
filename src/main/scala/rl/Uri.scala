@@ -1,7 +1,7 @@
 package rl
 
 import java.lang.{ UnsupportedOperationException, Boolean }
-import java.net.{ URISyntaxException, IDN }
+import java.net.{URI, URISyntaxException, IDN}
 
 trait UriNode {
   def uriPart: String
@@ -91,58 +91,44 @@ object Uri {
    */
   val UriParts = """^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?""".r
 
-  def apply(uriString: String) = {
-//    try {
-      val UriParts(_, sch, auth2, auth, rawPath, _, qry, _, frag) = uriString
-
-      val pth = parsePath(rawPath.blankOption)
-
-      if (auth2.blankOption.map(_.startsWith("/")).getOrElse(false)) {
-        if (auth.isNotBlank)
-          AbsoluteUri(
-            Scheme(sch),
-            Some(Authority(IDN.toASCII(auth))),
-            pth,
-            QueryString(qry),
-            UriFragment(frag),
-            uriString)
-        else
-          RelativeUri(
-            None,
-            pth,
-            QueryString(qry),
-            UriFragment(frag),
-            uriString
-          )
-      } else {
-        if (auth.isNotBlank) {
-          RelativeUri(
-            Some(Authority(IDN.toASCII(auth))),
-            pth,
-            QueryString(qry),
-            UriFragment(frag),
-            uriString)
-        } else {
-          RelativeUri(
-            None,
-            pth,
-            QueryString(qry),
-            UriFragment(frag),
-            uriString
-          )
-        }
+  def apply(uriString: String): Uri = {
+    try {
+      apply(URI.create(uriString))
+    } catch {
+      case e: URISyntaxException => {
+        FailedUri(e, uriString)
       }
-//    } catch {
-//      case e: URISyntaxException ⇒ {
-//        FailedUri(e, uriString)
-//      }
-//      case e: NullPointerException ⇒ {
-//        FailedUri(e, uriString)
-//      }
-//      case e ⇒ {
-//        FailedUri(e, uriString)
-//      }
-//    }
+    }
+  }
+
+  def apply(u: URI): Uri = {
+    try {
+      val pth = parsePath(u.getRawPath.blankOption)
+
+      if (u.isAbsolute) {
+        AbsoluteUri(
+          Scheme(u.getScheme), 
+          u.getRawAuthority.blankOption.map(a => Authority(IDN.toASCII(a))),
+          pth,
+          QueryString(u.getRawQuery),
+          UriFragment(u.getRawFragment),
+          uriString)
+      } else {
+        RelativeUri(
+          u.getRawAuthority.blankOption.map(a => Authority(IDN.toASCII(a))),
+          pth,
+          QueryString(u.getRawQuery),
+          UriFragment(u.getRawFragment),
+          uriString)
+      }
+    } catch {
+      case e: NullPointerException ⇒ {
+        FailedUri(e, uriString)
+      }
+      case e ⇒ {
+        FailedUri(e, uriString)
+      }
+    }
   }
 
   private def parsePath(text: Option[String]): UriPath = {
