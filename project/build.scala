@@ -31,7 +31,7 @@ object ShellPrompt {
 object RlSettings {
   val buildOrganization = "com.mojolly.rl"
   val buildScalaVersion = "2.9.1"
-  val buildVersion      = "0.2.4-SNAPSHOT"
+  val buildVersion      = "0.2.5-SNAPSHOT"
 
   // lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(
   //   preferences in Compile := formattingPreferences,
@@ -74,7 +74,7 @@ object RlSettings {
         case "2.9.0-1" => "org.specs2" %% "specs2" % "1.5" % "test"
         case _ => "org.specs2" %% "specs2" % "1.7.1" % "test"
       },
-      libraryDependencies += "org.parboiled" % "parboiled-scala" % "1.0.2",
+//      libraryDependencies += "org.parboiled" % "parboiled-scala" % "1.0.2",
       libraryDependencies += "com.github.scala-incubator.io" %% "scala-io-core" % "0.3.0",
       resolvers ++= Seq(
         "ScalaTools Snapshots" at "http://scala-tools.org/repo-snapshots"

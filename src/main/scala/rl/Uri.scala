@@ -92,40 +92,57 @@ object Uri {
   val UriParts = """^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?""".r
 
   def apply(uriString: String) = {
-    try {
+//    try {
       val UriParts(_, sch, auth2, auth, rawPath, _, qry, _, frag) = uriString
 
       val pth = parsePath(rawPath.blankOption)
 
-      if (auth2.startsWith("/")) {
-        val r = AbsoluteUri(
-          Scheme(sch),
-          Some(Authority(IDN.toASCII(auth))),
-          pth,
-          QueryString(qry),
-          UriFragment(frag),
-          uriString)
-        r
+      if (auth2.blankOption.map(_.startsWith("/")).getOrElse(false)) {
+        if (auth.isNotBlank)
+          AbsoluteUri(
+            Scheme(sch),
+            Some(Authority(IDN.toASCII(auth))),
+            pth,
+            QueryString(qry),
+            UriFragment(frag),
+            uriString)
+        else
+          RelativeUri(
+            None,
+            pth,
+            QueryString(qry),
+            UriFragment(frag),
+            uriString
+          )
       } else {
-        val r = RelativeUri(
-          Some(Authority(IDN.toASCII(auth))),
-          pth,
-          QueryString(qry),
-          UriFragment(frag),
-          uriString)
-        r
+        if (auth.isNotBlank) {
+          RelativeUri(
+            Some(Authority(IDN.toASCII(auth))),
+            pth,
+            QueryString(qry),
+            UriFragment(frag),
+            uriString)
+        } else {
+          RelativeUri(
+            None,
+            pth,
+            QueryString(qry),
+            UriFragment(frag),
+            uriString
+          )
+        }
       }
-    } catch {
-      case e: URISyntaxException ⇒ {
-        FailedUri(e, uriString)
-      }
-      case e: NullPointerException ⇒ {
-        FailedUri(e, uriString)
-      }
-      case e ⇒ {
-        FailedUri(e, uriString)
-      }
-    }
+//    } catch {
+//      case e: URISyntaxException ⇒ {
+//        FailedUri(e, uriString)
+//      }
+//      case e: NullPointerException ⇒ {
+//        FailedUri(e, uriString)
+//      }
+//      case e ⇒ {
+//        FailedUri(e, uriString)
+//      }
+//    }
   }
 
   private def parsePath(text: Option[String]): UriPath = {

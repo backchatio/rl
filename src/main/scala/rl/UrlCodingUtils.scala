@@ -10,7 +10,7 @@ import collection.immutable.BitSet
 trait UrlCodingUtils {
 
   private val toSkip = BitSet((('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9') ++ "!$&'()*+,;=:/?#[]@-._~".toSet).map(_.toInt): _*)
-
+  private val space = ' '.toInt
   private[rl] val PctEncoded = """%([0-9a-fA-F][0-9a-fA-F])""".r
   private val LowerPctEncoded = """%([0-9a-f][0-9a-f])""".r
   private val InvalidChars = "[^\\.a-zA-Z0-9!$&'()*+,;=:/?#\\[\\]@-_~]".r
@@ -40,14 +40,17 @@ trait UrlCodingUtils {
     })
   }
 
-  def urlEncode(toEncode: String, charset: Charset = Utf8) = {
+  def urlEncode(toEncode: String, charset: Charset = Utf8, spaceIsPlus: Boolean = false) = {
     val in = charset.encode(ensureUppercasedEncodings(toEncode))
     val out = CharBuffer.allocate((in.remaining() * 3).ceil.toInt)
     while (in.hasRemaining) {
       val b = in.get() & 0xFF
       if (toSkip.contains(b)) {
         out.put(b.toInt.toChar)
-      } else {
+      } else if (b == space && spaceIsPlus) {
+        out.put('+')
+      }
+      else {
         out.put('%')
         out.put(HexUpperCaseChars((b >> 4) & 0xF))
         out.put(HexUpperCaseChars(b & 0xF))
