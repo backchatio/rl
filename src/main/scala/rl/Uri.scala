@@ -101,7 +101,7 @@ object Uri {
     }
   }
 
-  def apply(u: URI): Uri = {
+  def apply(u: URI, originalUri: Option[String] = None): Uri = {
     try {
       val pth = parsePath(u.getRawPath.blankOption)
 
@@ -112,21 +112,21 @@ object Uri {
           pth,
           QueryString(u.getRawQuery),
           UriFragment(u.getRawFragment),
-          uriString)
+          originalUri getOrElse u.toString)
       } else {
         RelativeUri(
           u.getRawAuthority.blankOption.map(a => Authority(IDN.toASCII(a))),
           pth,
           QueryString(u.getRawQuery),
           UriFragment(u.getRawFragment),
-          uriString)
+          originalUri getOrElse u.toString)
       }
     } catch {
       case e: NullPointerException ⇒ {
-        FailedUri(e, uriString)
+        FailedUri(e, originalUri getOrElse u.toString)
       }
       case e ⇒ {
-        FailedUri(e, uriString)
+        FailedUri(e, originalUri getOrElse u.toString)
       }
     }
   }
