@@ -98,6 +98,9 @@ object Uri {
       case e: URISyntaxException => {
         FailedUri(e, uriString)
       }
+      case e: IllegalArgumentException => {
+        FailedUri(e, uriString)
+      }
     }
   }
 
