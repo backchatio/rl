@@ -17,7 +17,7 @@ trait UrlCodingUtils {
 
   private val HexUpperCaseChars = (0 until 16) map { i ⇒ Character.toUpperCase(Character.forDigit(i, 16)) }
 
-  private[rl] val UTF_8 = "UTF-8".intern
+  private[rl] val UTF_8 = "UTF-8"
   private[rl] val Utf8 = Charset.forName(UTF_8)
 
   def isUrlEncoded(string: String) = {

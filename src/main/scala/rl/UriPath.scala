@@ -66,8 +66,8 @@ trait PathOps {
 
   private val wlpExpr = """^[A-Za-z]:\\""".r
   private val wuncpExpr = """^\\\\""".r
-  val windowsSeparator = "\\".intern
-  val unixSeparator = "/".intern
+  val windowsSeparator = "\\"
+  val unixSeparator = "/"
 
   def windowsToUnixPath(path: String) = {
     if (wlpExpr.findFirstIn(path).isDefined) {
