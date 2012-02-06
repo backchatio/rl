@@ -94,7 +94,12 @@ object RlSettings {
         if (version.trim.endsWith("SNAPSHOT")) Some("snapshots" at nexus+"snapshots/") 
         else                                   Some("releases" at nexus+"releases/")
       },
-      shellPrompt  := ShellPrompt.buildShellPrompt) //++ formatSettings
+      shellPrompt  := ShellPrompt.buildShellPrompt,
+      testOptions := Seq(
+        Tests.Argument("console", "junitxml")),
+      testOptions <+= crossTarget map { ct =>
+        Tests.Setup { () => System.setProperty("specs2.junit.outDir", new File(ct, "specs-reports").getAbsolutePath) }
+      }) //++ formatSettings
 
   val packageSettings = Seq (
     packageOptions <<= (packageOptions, name, version, organization) map {
