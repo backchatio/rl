@@ -62,6 +62,7 @@ object RlSettings {
       organization := buildOrganization,
       scalaVersion := buildScalaVersion,
       javacOptions ++= Seq("-Xlint:unchecked"),
+      exportJars := true,
       testOptions in Test += Tests.Setup( () => System.setProperty("akka.mode", "test") ),
       scalacOptions ++= Seq(
         "-optimize",
