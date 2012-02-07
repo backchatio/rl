@@ -1,5 +1,6 @@
 import sbt._
 import Keys._
+import scala.xml._
 // import com.typesafe.sbtscalariform._
 // import ScalariformPlugin._
 // import ScalariformKeys._
@@ -29,7 +30,7 @@ object ShellPrompt {
 }
 
 object RlSettings {
-  val buildOrganization = "com.mojolly.rl"
+  val buildOrganization = "io.backchat.rl"
   val buildScalaVersion = "2.9.1"
   val buildVersion      = "0.2.6-SNAPSHOT"
 
@@ -81,7 +82,7 @@ object RlSettings {
       resolvers ++= Seq(
         "ScalaTools Snapshots" at "http://scala-tools.org/repo-snapshots"
       ),
-      retrieveManaged := true,
+//      retrieveManaged := true,
       crossScalaVersions := Seq("2.9.1", "2.9.0-1"),
       // (excludeFilter in format) <<= (excludeFilter) (_ || "*Spec.scala"),
       libraryDependencies ++= compilerPlugins,
@@ -90,11 +91,6 @@ object RlSettings {
       },
       autoCompilerPlugins := true,
       parallelExecution in Test := false,
-      publishTo <<= (version) { version: String => 
-        val nexus = "http://nexus.scala-tools.org/content/repositories/"
-        if (version.trim.endsWith("SNAPSHOT")) Some("snapshots" at nexus+"snapshots/") 
-        else                                   Some("releases" at nexus+"releases/")
-      },
       shellPrompt  := ShellPrompt.buildShellPrompt,
       testOptions := Seq(
         Tests.Argument("console", "junitxml")),
@@ -106,8 +102,8 @@ object RlSettings {
     packageOptions <<= (packageOptions, name, version, organization) map {
       (opts, title, version, vendor) =>
          opts :+ Package.ManifestAttributes(
-          "Created-By" -> System.getProperty("user.name"),
-          "Built-By" -> "Simple Build Tool",
+          "Created-By" -> "Simple Build Tool",
+          "Built-By" -> System.getProperty("user.name"),
           "Build-Jdk" -> System.getProperty("java.version"),
           "Specification-Title" -> title,
           "Specification-Vendor" -> "Mojolly Ltd.",
@@ -118,8 +114,40 @@ object RlSettings {
           "Implementation-Vendor" -> "Mojolly Ltd.",
           "Implementation-Url" -> "https://backchat.io"
          )
-    })
- 
+    },
+    homepage := Some(url("https://backchat.io")),
+    startYear := Some(2010),
+    licenses := Seq(("BSD", url("http://github.com/mojolly/rl/raw/HEAD/LICENSE"))),
+    pomExtra <<= (pomExtra, name, description) {(pom, name, desc) => pom ++ Group(
+      <scm>
+        <connection>scm:git:git://github.com/mojolly/rl.git</connection>
+        <developerConnection>scm:git:git@github.com:mojolly/rl.git</developerConnection>
+        <url>https://github.com/mojolly/rl</url>
+      </scm>
+      <developers>
+        <developer>
+          <id>casualjim</id>
+          <name>Ivan Porto Carrero</name>
+          <url>http://flanders.co.nz/</url>
+        </developer>
+        <developer>
+          <id>ben-biddington</id>
+          <name>Ben Biddington</name>
+          <url>http://benbiddington.wordpress.com/</url>
+        </developer>
+      </developers>
+    )},
+    publishMavenStyle := true,
+    publishTo <<= version { (v: String) =>
+      val nexus = "https://oss.sonatype.org/"
+      if (v.trim.endsWith("SNAPSHOT"))
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    },
+    publishArtifact in Test := false,
+    pomIncludeRepository := { x => false })
+
   val projectSettings = buildSettings ++ packageSettings
 }
 
