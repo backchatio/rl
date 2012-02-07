@@ -117,7 +117,7 @@ object RlSettings {
     },
     homepage := Some(url("https://backchat.io")),
     startYear := Some(2010),
-    licenses := Seq(("BSD", url("http://github.com/mojolly/rl/raw/HEAD/LICENSE"))),
+    licenses := Seq(("MIT", url("http://github.com/mojolly/rl/raw/HEAD/LICENSE"))),
     pomExtra <<= (pomExtra, name, description) {(pom, name, desc) => pom ++ Group(
       <scm>
         <connection>scm:git:git://github.com/mojolly/rl.git</connection>
