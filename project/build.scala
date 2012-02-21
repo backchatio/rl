@@ -32,7 +32,7 @@ object ShellPrompt {
 object RlSettings {
   val buildOrganization = "io.backchat.rl"
   val buildScalaVersion = "2.9.1"
-  val buildVersion      = "0.2.8-SNAPSHOT"
+  val buildVersion      = "0.2.9-SNAPSHOT"
 
   // lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(
   //   preferences in Compile := formattingPreferences,
@@ -74,7 +74,7 @@ object RlSettings {
         "-P:continuations:enable"),
       libraryDependencies <+= (scalaVersion) {
         case "2.9.0-1" => "org.specs2" %% "specs2" % "1.5" % "test"
-        case _ => "org.specs2" %% "specs2" % "1.8.1" % "test"
+        case _ => "org.specs2" %% "specs2" % "1.8.2" % "test"
       },
 //      libraryDependencies += "org.parboiled" % "parboiled-scala" % "1.0.2",
       libraryDependencies += "com.github.scala-incubator.io" %% "scala-io-core" % "0.3.0",
@@ -155,7 +155,7 @@ object RlBuild extends Build {
 
   import RlSettings._
   val buildShellPrompt =  ShellPrompt.buildShellPrompt
-  val downloadDomainFile = TaskKey[File]("update-tld-file", "updates the tld names dat file from mozilla")
+  val downloadDomainFile = TaskKey[Int]("update-tld-file", "updates the tld names dat file from mozilla")
   val domainFile = SettingKey[File]("tld-file", "the file that contains the tld names")
 
 
@@ -163,7 +163,6 @@ object RlBuild extends Build {
     domainFile <<= (sourceDirectory) apply { _ / "main" / "resources" / "rl" / "tld_names.dat" },
     downloadDomainFile <<= (domainFile, streams) map { (domFile, s) =>
       domFile #< url("http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1") ! s.log
-      domFile
     },
     (compile in Compile) <<= (compile in Compile) dependsOn downloadDomainFile,
     description := "An RFC-3986 compliant URI library."))
