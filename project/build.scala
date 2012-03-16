@@ -32,7 +32,7 @@ object ShellPrompt {
 object RlSettings {
   val buildOrganization = "io.backchat.rl"
   val buildScalaVersion = "2.9.1"
-  val buildVersion      = "0.2.9-SNAPSHOT"
+  val buildVersion      = "0.3.1-SNAPSHOT"
 
   // lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(
   //   preferences in Compile := formattingPreferences,
