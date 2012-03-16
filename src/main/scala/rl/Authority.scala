@@ -1,6 +1,7 @@
 package rl
 
 import java.net._
+import java.util.Locale
 
 object UserInfo {
   def apply(userInfo: String): Option[UserInfo] = {
@@ -36,7 +37,8 @@ object Authority {
 
 sealed trait UriHost extends UriNode {
   def value: String
-  def normalize: UriHost with UriHostDomains
+  def normalize = normalize(false)
+  def normalize(stripCommonPrefix: Boolean): UriHost with UriHostDomains
 
   def apply() = value
 }
@@ -46,7 +48,7 @@ class EmptyHost extends UriHost {
 
   val value = "/"
 
-  def normalize = new EmptyHost with UriHostDomains {
+  def normalize(stripCommonPrefix: Boolean) = new EmptyHost with UriHostDomains {
     protected def parsed = ("/", "", "")
   }
 }
@@ -56,10 +58,10 @@ case class HostName(value: String) extends UriHost {
 
   val uriPart = UrlCodingUtils.ensureUrlEncoding(value)
 
-  override def normalize = {
-    // val va = if (value.startsWith("www.")) value.substring(4) else value
+  override def normalize(stripCommonPrefix: Boolean) = {
     val punycode = IDN.toASCII(value)
-    new HostName(punycode) with UriHostDomains {
+    val va = if (stripCommonPrefix) """^www\d*\.""".r.replaceFirstIn(punycode.toLowerCase(Locale.ENGLISH), "") else punycode
+    new HostName(va) with UriHostDomains {
       protected val parsed = DomainParser(this.value)
     }
   }
@@ -69,7 +71,7 @@ case class IPv4Address(value: String) extends UriHost {
 
   val bytes = value.split("\\.").map(_.toByte).toArray
 
-  override def normalize = new IPv4Address(value) with UriHostDomains {
+  override def normalize(stripCommonPrefix: Boolean) = new IPv4Address(value) with UriHostDomains {
     protected val parsed = {
       try {
         DomainParser(InetAddress.getByAddress(bytes).getCanonicalHostName)
@@ -81,20 +83,22 @@ case class IPv4Address(value: String) extends UriHost {
 }
 case class IPv6Address(value: String) extends UriHost {
   val uriPart = "[" + value + "]"
-  def normalize: UriHost with UriHostDomains = new IPv6Address(value) with UriHostDomains {
+  def normalize(stripCommonPrefix: Boolean): UriHost with UriHostDomains = new IPv6Address(value) with UriHostDomains {
     protected val parsed = (value, "", "")
   }
 }
 case class IPvFutureAddress(value: String) extends UriHost {
   val uriPart = "[" + value + "]"
-  def normalize: UriHost with UriHostDomains = new IPvFutureAddress(value) with UriHostDomains {
+  def normalize(stripCommonPrefix: Boolean): UriHost with UriHostDomains = new IPvFutureAddress(value) with UriHostDomains {
     protected val parsed = (value, "", "")
   }
 }
 
 case class Authority(userInfo: Option[UserInfo], host: UriHost, port: Option[Int]) extends UriNode {
 
-  def normalize = copy(userInfo.map(_.normalize), host.normalize, port)
+  def normalize = normalize(false)
+  def normalize(stripCommonPrefix: Boolean) =
+    copy(userInfo.map(_.normalize), host.normalize(stripCommonPrefix), port)
 
   val uriPart = "//" + toString + "/"
   override def toString = {

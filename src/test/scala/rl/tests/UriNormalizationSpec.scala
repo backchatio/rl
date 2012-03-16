@@ -13,13 +13,14 @@ class UriNormalizationSpec extends Specification {
       } ^
       "expand domain, subdomain and public suffix for the host" ! {
         val host = Uri("https://builds.mojolly.com").normalize.authority.get.host
-        host must beAnInstanceOf[UriHost with UriHostDomains]
-        val hwd = host.asInstanceOf[UriHost with UriHostDomains]
-        (hwd.domain must_== "mojolly") and (hwd.subdomain must_== "builds") and (hwd.publicSuffix must_== "com")
+        host must beAnInstanceOf[UriHost with UriHostDomains] and {
+          val hwd = host.asInstanceOf[UriHost with UriHostDomains]
+          (hwd.domain must_== "mojolly") and (hwd.subdomain must_== "builds") and (hwd.publicSuffix must_== "com")
+        }
       } ^
-//      "remove www from the domain" ! {
-//        Uri("http://www.example.org/path/to").normalize.authority.get.host.value must_== "example.org"
-//      } ^
+      "remove www from the domain" ! {
+        Uri("http://www.example.org/path/to").normalize(true).authority.get.host.value must_== "example.org"
+      } ^
       "collapse the dots out of a path" ! {
         Uri("http://backchat.io/path/././to/../blah").normalize.segments.uriPart must_== "/path/blah/"
       } ^

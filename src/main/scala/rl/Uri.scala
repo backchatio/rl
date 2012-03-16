@@ -35,7 +35,8 @@ trait Uri {
   def originalUri: String
   def isAbsolute: Boolean
   def isRelative: Boolean
-  def normalize: Uri
+  def normalize: Uri = normalize(false)
+  def normalize(stripCommonPrefixFromHost: Boolean = false): Uri
 
   def asciiString = {
     scheme.uriPart + authority.map(_.uriPart).getOrElse("") + segments.uriPart + query.uriPart + fragment.uriPart
@@ -47,7 +48,8 @@ case class AbsoluteUri(scheme: Scheme, authority: Option[Authority], segments: U
   val isRelative: Boolean = false
   
 
-  def normalize = copy(scheme.normalize, authority.map(_.normalize), segments.normalize, query.normalize, fragment.normalize)
+  def normalize(stripCommonPrefixFromHost: Boolean = false) =
+    copy(scheme.normalize, authority.map(_.normalize(stripCommonPrefixFromHost)), segments.normalize, query.normalize, fragment.normalize)
 }
 
 case class RelativeUri(authority: Option[Authority], segments: UriPath, query: QueryString, fragment: UriFragment, originalUri: String = "") extends Uri {
@@ -56,7 +58,8 @@ case class RelativeUri(authority: Option[Authority], segments: UriPath, query: Q
   val isAbsolute: Boolean = false
   val isRelative: Boolean = true
 
-  def normalize = copy(authority.map(_.normalize), segments.normalize, query.normalize, fragment.normalize)
+  def normalize(stripCommonPrefixFromHost: Boolean = false) =
+    copy(authority.map(_.normalize(stripCommonPrefixFromHost)), segments.normalize, query.normalize, fragment.normalize)
 }
 
 case class FailedUri(throwable: Throwable, originalUri: String = "") extends Uri {
@@ -80,7 +83,7 @@ case class FailedUri(throwable: Throwable, originalUri: String = "") extends Uri
 
   val isAbsolute: Boolean = false
 
-  def normalize = this
+  def normalize(stripCommonPrefixFromHost: Boolean = false) = this
 }
 
 object Uri {

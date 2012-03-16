@@ -13,7 +13,6 @@ object DomainParser {
 
   lazy val publicSuffixes = {
     val src = Resource.fromInputStream(getClass.getClassLoader.getResourceAsStream("rl/tld_names.dat"))
-
     src.lines().foldLeft(PublicSuffixList.empty) { (buff, line) ⇒
       line.blankOption filter (l ⇒ !l.startsWith("//")) map { l ⇒
         val parts = l.split("\\.").reverse
