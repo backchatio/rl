@@ -60,8 +60,8 @@ case class HostName(value: String) extends UriHost {
 
   override def normalize(stripCommonPrefix: Boolean) = {
     val punycode = IDN.toASCII(value)
-    val va = if (stripCommonPrefix) """^www\d*\.""".r.replaceFirstIn(punycode.toLowerCase(Locale.ENGLISH), "") else punycode
-    new HostName(va) with UriHostDomains {
+    val va = if (stripCommonPrefix) """(?i)^www\d*\.""".r.replaceFirstIn(punycode, "") else punycode
+    new HostName(va.toLowerCase(Locale.ENGLISH)) with UriHostDomains {
       protected val parsed = DomainParser(this.value)
     }
   }

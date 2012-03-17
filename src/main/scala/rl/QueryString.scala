@@ -1,6 +1,7 @@
 package rl
 
 import collection.{ GenSeq, immutable, SortedMap }
+import Imports._
 
 object QueryString {
 

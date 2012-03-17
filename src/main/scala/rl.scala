@@ -15,5 +15,9 @@ package object rl {
   private[rl] implicit def string2UriStringExtension(source: String) = new UriStringExtensions(source)
   private[rl] implicit val Utf8Codec = Codec.UTF8
 
-  implicit def string2RicherUriString(s: String) = new RicherUriString(s)
+  trait Imports {
+    implicit def string2RicherUriString(s: String) = new RicherUriString(s)
+  }
+
+  object Imports extends Imports
 }
