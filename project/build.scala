@@ -79,6 +79,7 @@ object RlSettings {
 //      libraryDependencies += "org.parboiled" % "parboiled-scala" % "1.0.2",
       libraryDependencies += "com.github.scala-incubator.io" %% "scala-io-core" % "0.3.0",
       libraryDependencies += "junit" % "junit" % "4.10" % "test",
+      externalResolvers <<= resolvers map { rs => Resolver.withDefaultResolvers(rs, mavenCentral = true, scalaTools = false) }
       resolvers ++= Seq(
         "ScalaTools Snapshots" at "http://scala-tools.org/repo-snapshots"
       ),
