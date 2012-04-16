@@ -77,14 +77,14 @@ object RlSettings {
         case _ => "org.specs2" %% "specs2" % "1.8.2" % "test"
       },
 //      libraryDependencies += "org.parboiled" % "parboiled-scala" % "1.0.2",
-      libraryDependencies += "com.github.scala-incubator.io" %% "scala-io-core" % "0.3.0",
+      libraryDependencies += "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.0",
       libraryDependencies += "junit" % "junit" % "4.10" % "test",
       externalResolvers <<= resolvers map { rs => Resolver.withDefaultResolvers(rs, mavenCentral = true, scalaTools = false) },
       resolvers ++= Seq(
         "ScalaTools Snapshots" at "http://scala-tools.org/repo-snapshots"
       ),
 //      retrieveManaged := true,
-      crossScalaVersions := Seq("2.9.1", "2.9.0-1"),
+      crossScalaVersions := Seq("2.9.1", "2.9.0-1", "2.9.0", "2.9.1-1", "2.9.2"),
       // (excludeFilter in format) <<= (excludeFilter) (_ || "*Spec.scala"),
       libraryDependencies ++= compilerPlugins,
       artifact in (Compile, packageBin) ~= { (art: Artifact) =>
