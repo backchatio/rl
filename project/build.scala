@@ -81,7 +81,8 @@ object RlSettings {
       libraryDependencies += "junit" % "junit" % "4.10" % "test",
       externalResolvers <<= resolvers map { rs => Resolver.withDefaultResolvers(rs, mavenCentral = true, scalaTools = false) },
       resolvers ++= Seq(
-        "ScalaTools Snapshots" at "http://scala-tools.org/repo-snapshots"
+        "ScalaTools Snapshots" at "http://scala-tools.org/repo-snapshots",
+        "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/"
       ),
 //      retrieveManaged := true,
       crossScalaVersions := Seq("2.9.1", "2.9.0-1", "2.9.0", "2.9.1-1", "2.9.2"),
