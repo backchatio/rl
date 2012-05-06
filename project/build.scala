@@ -74,7 +74,7 @@ object RlSettings {
         "-P:continuations:enable"),
       libraryDependencies <+= (scalaVersion) {
         case "2.9.0-1" => "org.specs2" %% "specs2" % "1.5" % "test"
-        case _ => "org.specs2" %% "specs2" % "1.8.2" % "test"
+        case _ => "org.specs2" %% "specs2" % "1.9" % "test"
       },
 //      libraryDependencies += "org.parboiled" % "parboiled-scala" % "1.0.2",
       libraryDependencies += "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.0",
