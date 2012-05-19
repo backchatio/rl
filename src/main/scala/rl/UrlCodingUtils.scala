@@ -49,8 +49,7 @@ trait UrlCodingUtils {
         out.put(b.toInt.toChar)
       } else if (b == space && spaceIsPlus) {
         out.put('+')
-      }
-      else {
+      } else {
         out.put('%')
         out.put(HexUpperCaseChars((b >> 4) & 0xF))
         out.put(HexUpperCaseChars(b & 0xF))
@@ -63,7 +62,7 @@ trait UrlCodingUtils {
   def urlDecode(toDecode: String, charset: Charset = Utf8, plusIsSpace: Boolean = false, toSkip: String = "") = {
     val in = CharBuffer.wrap(toDecode)
     val out = ByteBuffer.allocate(in.remaining())
-    val skip = BitSet(toSkip.toSet[Char].map(c => c.toInt).toSeq:_*)
+    val skip = BitSet(toSkip.toSet[Char].map(c ⇒ c.toInt).toSeq: _*)
     while (in.hasRemaining) {
       val mark = in.position()
       val c = in.get()

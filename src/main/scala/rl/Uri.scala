@@ -1,7 +1,7 @@
 package rl
 
 import java.lang.{ UnsupportedOperationException, Boolean }
-import java.net.{URI, URISyntaxException, IDN}
+import java.net.{ URI, URISyntaxException, IDN }
 
 trait UriNode {
   def uriPart: String
@@ -16,14 +16,13 @@ trait UriOperations {
   def /(other: Uri): Uri
 }
 
-
 trait Uri {
   def scheme: UriScheme
   def authority: Option[Authority]
   def segments: UriPath
   def query: QueryString
   def fragment: UriFragment
-  
+
   lazy val user = authority flatMap (_.userInfo map (_.user))
   lazy val secret = authority flatMap (_.userInfo map (_.secret))
   lazy val host = authority map (_.host.value)
@@ -46,7 +45,6 @@ trait Uri {
 case class AbsoluteUri(scheme: Scheme, authority: Option[Authority], segments: UriPath, query: QueryString, fragment: UriFragment, originalUri: String = "") extends Uri {
   val isAbsolute: Boolean = true
   val isRelative: Boolean = false
-  
 
   def normalize(stripCommonPrefixFromHost: Boolean = false) =
     copy(scheme.normalize, authority.map(_.normalize(stripCommonPrefixFromHost)), segments.normalize, query.normalize, fragment.normalize)
@@ -98,10 +96,10 @@ object Uri {
     try {
       apply(URI.create(uriString))
     } catch {
-      case e: URISyntaxException => {
+      case e: URISyntaxException ⇒ {
         FailedUri(e, uriString)
       }
-      case e: IllegalArgumentException => {
+      case e: IllegalArgumentException ⇒ {
         FailedUri(e, uriString)
       }
     }
@@ -113,15 +111,15 @@ object Uri {
 
       if (u.isAbsolute) {
         AbsoluteUri(
-          Scheme(u.getScheme), 
-          u.getRawAuthority.blankOption.map(a => Authority(IDN.toASCII(a))),
+          Scheme(u.getScheme),
+          u.getRawAuthority.blankOption.map(a ⇒ Authority(IDN.toASCII(a))),
           pth,
           QueryString(u.getRawQuery),
           UriFragment(u.getRawFragment),
           originalUri getOrElse u.toString)
       } else {
         RelativeUri(
-          u.getRawAuthority.blankOption.map(a => Authority(IDN.toASCII(a))),
+          u.getRawAuthority.blankOption.map(a ⇒ Authority(IDN.toASCII(a))),
           pth,
           QueryString(u.getRawQuery),
           UriFragment(u.getRawFragment),
