@@ -32,7 +32,7 @@ class UrlCodingSpec extends Specification {
       } ^
       "not overflow on all utf-8 chars" ! {
         urlDecode("äéèüああああああああ") must_== "äéèüああああああああ"
-      }
+      } ^
       "decode a pct encoded string" ! {
         urlDecode("hello%20world") must_== "hello world"
       } ^
