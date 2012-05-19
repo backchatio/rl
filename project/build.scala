@@ -157,16 +157,17 @@ object RlBuild extends Build {
 
   import RlSettings._
   val buildShellPrompt =  ShellPrompt.buildShellPrompt
-  val downloadDomainFile = TaskKey[Int]("update-tld-file", "updates the tld names dat file from mozilla")
-  val domainFile = SettingKey[File]("tld-file", "the file that contains the tld names")
-
+  object rl {
+    val downloadDomainFile = TaskKey[Int]("update-tld-file", "updates the tld names dat file from mozilla")
+    val domainFile = SettingKey[File]("tld-file", "the file that contains the tld names")
+    val domainFileUrl = SettingKey[URL]("tld-file-url", "the url from where to download the file that contains the tld names")
+  }
 
   lazy val root = Project ("rl", file("."), settings = projectSettings ++ Seq(
-    domainFile <<= (sourceDirectory) apply { _ / "main" / "resources" / "rl" / "tld_names.dat" },
-    downloadDomainFile <<= (domainFile, streams) map { (domFile, s) =>
-      domFile #< url("http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1") ! s.log
-    },
-    (compile in Compile) <<= (compile in Compile) dependsOn downloadDomainFile,
+    rl.domainFile <<= (resourceDirectory in Compile) apply { _  / "rl" / "tld_names.dat" },
+    rl.domainFileUrl := url("http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1"),
+    rl.downloadDomainFile <<= (rl.domainFile, rl.domainFileUrl, streams) map (_ #< _ ! _.log),
+    (compile in Compile) <<= (compile in Compile) dependsOn rl.downloadDomainFile,
     description := "An RFC-3986 compliant URI library."))
   
 }
