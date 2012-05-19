@@ -1,4 +1,4 @@
-import scalax.io.Codec
+import scala.io.Codec
 
 package object rl {
 

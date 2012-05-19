@@ -15,7 +15,7 @@ So how does this library improve on the current URL and URI implementations?
 *  canonicalizes urls by stripping common query string parameters and reordering the remaining querystrings in alphabetical order.
 
 ## Running the tests
-To run the tests with sbt-0.10 you have to increase the thread stack size (ie. -Xss4m).
+To run the tests with sbt-0.11.3 you have to increase the thread stack size (ie. -Xss4m).
 
 ## Patches
 Patches are gladly accepted from their original author. Along with any patches, please state that the patch is your original work and that you license the work to the *rl* project under the MIT License.

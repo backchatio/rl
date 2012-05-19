@@ -1,9 +1,9 @@
 import sbt._
 import Keys._
 import scala.xml._
-// import com.typesafe.sbtscalariform._
-// import ScalariformPlugin._
-// import ScalariformKeys._
+import com.typesafe.sbtscalariform._
+import ScalariformPlugin._
+import ScalariformKeys._
 
 // Shell prompt which show the current project, git branch and build version
 // git magic from Daniel Sobral, adapted by Ivan Porto Carrero to also work with git flow branches
@@ -32,23 +32,23 @@ object ShellPrompt {
 object RlSettings {
   val buildOrganization = "io.backchat.rl"
   val buildScalaVersion = "2.9.1"
-  val buildVersion      = "0.3.1-SNAPSHOT"
-
-  // lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(
-  //   preferences in Compile := formattingPreferences,
-  //   preferences in Test    := formattingPreferences
-  // )
-
-  // def formattingPreferences = {
-  //   import scalariform.formatter.preferences._
-  //   (FormattingPreferences()
-  //       setPreference(IndentSpaces, 2)
-  //       setPreference(AlignParameters, true)
-  //       setPreference(AlignSingleLineCaseStatements, true)
-  //       setPreference(DoubleIndentClassDeclaration, true)
-  //       setPreference(RewriteArrowSymbols, true)
-  //       setPreference(PreserveSpaceBeforeArguments, true))
-  // }
+  val buildVersion      = "0.3.2-SNAPSHOT"
+//
+//  lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(
+//     preferences in Compile := formattingPreferences,
+//     preferences in Test    := formattingPreferences
+//  )
+//
+//  def formattingPreferences = {
+//     import scalariform.formatter.preferences._
+//     (FormattingPreferences()
+//         setPreference(IndentSpaces, 2)
+//         setPreference(AlignParameters, true)
+//         setPreference(AlignSingleLineCaseStatements, true)
+//         setPreference(DoubleIndentClassDeclaration, true)
+//         setPreference(RewriteArrowSymbols, true)
+//         setPreference(PreserveSpaceBeforeArguments, true))
+//  }
 
   val description = SettingKey[String]("description")
 
@@ -74,19 +74,16 @@ object RlSettings {
         "-P:continuations:enable"),
       libraryDependencies <+= (scalaVersion) {
         case "2.9.0-1" => "org.specs2" %% "specs2" % "1.5" % "test"
-        case _ => "org.specs2" %% "specs2" % "1.9" % "test"
+        case "2.9.0" => "org.specs2" % "specs2_2.9.0-1" % "1.5" % "test"
+        case _ => "org.specs2" %% "specs2" % "1.10" % "test"
       },
-//      libraryDependencies += "org.parboiled" % "parboiled-scala" % "1.0.2",
-      libraryDependencies += "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.0",
       libraryDependencies += "junit" % "junit" % "4.10" % "test",
-      externalResolvers <<= resolvers map { rs => Resolver.withDefaultResolvers(rs, mavenCentral = true, scalaTools = false) },
       resolvers ++= Seq(
-        "ScalaTools Snapshots" at "http://scala-tools.org/repo-snapshots",
+        "ScalaTools Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
         "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/"
       ),
-//      retrieveManaged := true,
       crossScalaVersions := Seq("2.9.1", "2.9.0-1", "2.9.0", "2.9.1-1", "2.9.2"),
-      // (excludeFilter in format) <<= (excludeFilter) (_ || "*Spec.scala"),
+//      (excludeFilter in format) <<= (excludeFilter) (_ || "*Spec.scala"),
       libraryDependencies ++= compilerPlugins,
       artifact in (Compile, packageBin) ~= { (art: Artifact) =>
         if (sys.props("java.version") startsWith "1.7") art.copy(classifier = Some("jdk17")) else art
