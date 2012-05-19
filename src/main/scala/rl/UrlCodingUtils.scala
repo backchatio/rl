@@ -40,7 +40,7 @@ trait UrlCodingUtils {
     })
   }
 
-  def urlEncode(toEncode: String, charset: Charset = Utf8, spaceIsPlus: Boolean = false) = {
+  def urlEncode(toEncode: String, charset: Charset = Utf8, spaceIsPlus: Boolean = false, toSkip: BitSet = toSkip) = {
     val in = charset.encode(ensureUppercasedEncodings(toEncode))
     val out = CharBuffer.allocate((in.remaining() * 3).ceil.toInt)
     while (in.hasRemaining) {
@@ -60,19 +60,28 @@ trait UrlCodingUtils {
     out.toString
   }
 
-  def urlDecode(toDecode: String, charset: Charset = Utf8, plusIsSpace: Boolean = false) = {
+  def urlDecode(toDecode: String, charset: Charset = Utf8, plusIsSpace: Boolean = false, toSkip: String = "") = {
     val in = CharBuffer.wrap(toDecode)
     val out = ByteBuffer.allocate(in.remaining())
+    val skip = BitSet(toSkip.toSet[Char].map(c => c.toInt).toSeq:_*)
     while (in.hasRemaining) {
       val mark = in.position()
       val c = in.get()
       if (c == '%') {
         if (in.remaining() >= 2) {
-          val x = Character.digit(in.get(), 0x10)
-          val y = Character.digit(in.get(), 0x10)
+          val xc = in.get()
+          val yc = in.get()
+          val x = Character.digit(xc, 0x10)
+          val y = Character.digit(yc, 0x10)
           if (x != -1 && y != -1) {
             val oo = (x << 4) + y
-            out.put(oo.toByte)
+            if (!skip.contains(oo)) {
+              out.put(oo.toByte)
+            } else {
+              out.put('%'.toByte)
+              out.put(xc.toByte)
+              out.put(yc.toByte)
+            }
           } else {
             in.position(mark)
           }
@@ -86,8 +95,9 @@ trait UrlCodingUtils {
       }
     }
     out.flip()
-    Utf8.decode(out).toString
+    charset.decode(out).toString
   }
+
 }
 
 object UrlCodingUtils extends UrlCodingUtils
