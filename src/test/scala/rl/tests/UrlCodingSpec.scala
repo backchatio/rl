@@ -27,6 +27,12 @@ class UrlCodingSpec extends Specification {
         val decoded = urlDecode("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890!$&'()*,;=:/?#[]@-._~")
         decoded must_== "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890!$&'()*,;=:/?#[]@-._~"
       } ^
+      "leave Fußgängerübergänge as is" ! {
+        urlDecode("Fußgängerübergänge") must_== "Fußgängerübergänge"
+      } ^
+      "not overflow on all utf-8 chars" ! {
+        urlDecode("äéèüああああああああ") must_== "äéèüああああああああ"
+      }
       "decode a pct encoded string" ! {
         urlDecode("hello%20world") must_== "hello world"
       } ^
@@ -38,7 +44,7 @@ class UrlCodingSpec extends Specification {
         "skips '%23' when decoding" ! { urlDecode("%23", toSkip = "/?#") must_== "%23" } ^
         "skips '%3F' when decoding" ! { urlDecode("%3F", toSkip = "/?#") must_== "%3F" } ^
         "still encodes others" ! { urlDecode("br%C3%BCcke", toSkip = "/?#") must_== "brücke"} ^
-        "handles mixed" ! { urlDecode("/ac%2Fdc/br%C3%BCcke%2342%3Fcheck", toSkip = "/?#") must_== "/ac%2Fdc/brücke%2342%3Fcheck"} ^
+        "handles mixed" ! { urlDecode("/ac%2Fdc/br%C3%BCcke%2342%3Fcheck", toSkip = "/?#") must_== "/ac%2Fdc/brücke%2342%3Fcheck"} ^ p ^
     "The plusIsSpace flag specifies how to treat pluses" ^
       "it treats + as allowed when the plusIsSpace flag is either not supplied or supplied as false" ! {
         urlDecode("+") must_== "+"
