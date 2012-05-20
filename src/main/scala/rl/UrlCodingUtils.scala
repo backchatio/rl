@@ -61,7 +61,8 @@ trait UrlCodingUtils {
 
   def urlDecode(toDecode: String, charset: Charset = Utf8, plusIsSpace: Boolean = false, toSkip: String = "") = {
     val in = CharBuffer.wrap(toDecode)
-    val out = ByteBuffer.allocate(in.remaining() * 8) // reserve enough space for 3-byte chars like japanese
+    // reserve enough space for 3-byte chars like japanese, and hope nobody uses a string of 4-byte chars
+    val out = ByteBuffer.allocate(in.remaining() * 3)
     val skip = BitSet(toSkip.toSet[Char].map(c ⇒ c.toInt).toSeq: _*)
     while (in.hasRemaining) {
       val mark = in.position()
