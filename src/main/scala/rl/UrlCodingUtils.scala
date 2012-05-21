@@ -61,7 +61,7 @@ trait UrlCodingUtils {
 
   def urlDecode(toDecode: String, charset: Charset = Utf8, plusIsSpace: Boolean = false, toSkip: String = "") = {
     val in = CharBuffer.wrap(toDecode)
-    // reserve enough space for 3-byte chars like japanese, and hope nobody uses a string of 4-byte chars
+    // reserve enough space for 3-byte chars like japanese, and hope nobody uses a string of only 4-byte chars
     val out = ByteBuffer.allocate(in.remaining() * 3)
     val skip = BitSet(toSkip.toSet[Char].map(c ⇒ c.toInt).toSeq: _*)
     while (in.hasRemaining) {
@@ -91,8 +91,7 @@ trait UrlCodingUtils {
       } else if (c == '+' && plusIsSpace) {
         out.put(' '.toByte)
       } else {
-        // normally `out.put(c.toByte)` would be enough since the url is encoded
-        // if it were a special char this would normally be encoded as a % encoded string
+        // normally `out.put(c.toByte)` would be enough since the url is %-encoded,
         // however there are cases where a string can be partially decoded
         // so we have to make sure the non us-ascii chars get preserved properly.
         if (this.toSkip.contains(c))
