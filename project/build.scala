@@ -1,9 +1,9 @@
 import sbt._
 import Keys._
 import scala.xml._
-import com.typesafe.sbtscalariform._
-import ScalariformPlugin._
-import ScalariformKeys._
+//import com.typesafe.sbtscalariform._
+//import ScalariformPlugin._
+//import ScalariformKeys._
 
 // Shell prompt which show the current project, git branch and build version
 // git magic from Daniel Sobral, adapted by Ivan Porto Carrero to also work with git flow branches
