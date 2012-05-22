@@ -63,11 +63,16 @@ case class StringSeqQueryString(rawValue: String) extends QueryString {
 
 object MapQueryString {
   def parseString(rw: String) = {
-    if (rw.indexOf('&') > -1) {
+    // this is probably an accident waiting to happen when people do actually mix stuff
+    val semiColon = if (rw.indexOf(';') > -1) {
+      rw.split(';').foldRight(Map[String, List[String]]()) { readQsPair _ }
+    } else readQsPair(rw)
+    val ampersand = if (rw.indexOf('&') > -1) {
       rw.split('&').foldRight(Map[String, List[String]]()) { readQsPair _ }
     } else {
       readQsPair(rw)
     }
+    semiColon ++ ampersand
   }
 
   private def readQsPair(pair: String, current: Map[String, List[String]] = Map.empty) = {
