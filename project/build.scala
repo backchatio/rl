@@ -161,7 +161,7 @@ object RlBuild extends Build {
   }
 
   lazy val root = Project ("rl", file("."), settings = projectSettings ++ Seq(
-    rl.domainFile <<= (resourceDirectory in Compile) apply { _  / "rl" / "tld_names.dat" },
+    rl.domainFile <<= (resourceDirectory in Compile) apply { _  / "tld_names.dat" },
     rl.domainFileUrl := url("http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1"),
     rl.downloadDomainFile <<= (rl.domainFile, rl.domainFileUrl, streams) map (_ #< _ ! _.log),
     (compile in Compile) <<= (compile in Compile) dependsOn rl.downloadDomainFile,

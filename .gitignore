@@ -36,3 +36,4 @@ rl.sublime-project
 .settings
 .target
 src/main/resources/rl/tld_names.dat
+tld_names.dat
