@@ -34,7 +34,6 @@ class AboutAbsolutePaths extends Specification with DataTables with ResultMatche
   "Absolute paths" ^
   "always start and end with a slash unless they are empty" ! {
     val empty : List[String] = List()
-    
     "path segments"     | "expected" |>
      empty              !  ""        |
      List("a")          !  "/a/"     |
