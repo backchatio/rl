@@ -31,8 +31,8 @@ object ShellPrompt {
 
 object RlSettings {
   val buildOrganization = "io.backchat.rl"
-  val buildScalaVersion = "2.9.1"
-  val buildVersion      = "0.3.2-SNAPSHOT"
+  val buildScalaVersion = "2.9.2"
+  val buildVersion      = "0.3.2"
 //
 //  lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(
 //     preferences in Compile := formattingPreferences,
@@ -75,7 +75,7 @@ object RlSettings {
       libraryDependencies <+= (scalaVersion) {
         case "2.9.0-1" => "org.specs2" %% "specs2" % "1.5" % "test"
         case "2.9.0" => "org.specs2" % "specs2_2.9.0-1" % "1.5" % "test"
-        case _ => "org.specs2" %% "specs2" % "1.10" % "test"
+        case _ => "org.specs2" %% "specs2" % "1.12" % "test"
       },
       libraryDependencies += "junit" % "junit" % "4.10" % "test",
       resolvers ++= Seq(
