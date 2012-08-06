@@ -13,7 +13,7 @@ class DomainParserSpec extends Specification {
         } ^
         "create the lower levels of the tree" ! {
           (DomainParser.publicSuffixes("jp") contains "ac" must beTrue) and
-            (DomainParser.publicSuffixes("jp")("aichi") contains "*" must beTrue)
+            (DomainParser.publicSuffixes("jp")("kawasaki") contains "*" must beTrue)
         } ^ p ^
       "parses a host string, the result" ^
         "includes the tld" ! { DomainParser("backchat.io") must_== ("io", "backchat", "") } ^

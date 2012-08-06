@@ -1,8 +1,0 @@
-//resolvers += Resolver.url("sbt-plugin-releases",
-//  new URL("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/"))(
-//    Resolver.ivyStylePatterns)
-//
-//
-addSbtPlugin("com.typesafe.sbtscalariform" % "sbtscalariform" % "0.5.1")
-
-addSbtPlugin("com.jsuereth" % "xsbt-gpg-plugin" % "0.6")
