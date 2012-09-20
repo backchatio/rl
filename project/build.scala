@@ -53,7 +53,6 @@ object RlSettings {
   val description = SettingKey[String]("description")
 
   val compilerPlugins = Seq(
-    compilerPlugin("org.scala-lang.plugins" % "continuations" % buildScalaVersion)//,
     // compilerPlugin("org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7")
   )
 
@@ -70,19 +69,20 @@ object RlSettings {
         "-deprecation",
         "-unchecked",
         "-Xcheckinit",
-        "-encoding", "utf8",
-        "-P:continuations:enable"),
+        "-encoding", "utf8"),
       libraryDependencies <+= (scalaVersion) {
+        case "2.10.0-M7" => "org.specs2" % "specs2_2.10.0-M7" % "1.12.1.1" % "test"
         case "2.9.0-1" => "org.specs2" %% "specs2" % "1.5" % "test"
         case "2.9.0" => "org.specs2" % "specs2_2.9.0-1" % "1.5" % "test"
         case _ => "org.specs2" %% "specs2" % "1.12" % "test"
       },
       libraryDependencies += "junit" % "junit" % "4.10" % "test",
       resolvers ++= Seq(
-        "ScalaTools Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+        "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases",
+        "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
         "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/"
       ),
-      crossScalaVersions := Seq("2.9.1", "2.9.0-1", "2.9.0", "2.9.1-1", "2.9.2"),
+      crossScalaVersions := Seq("2.9.1", "2.9.0-1", "2.9.0", "2.9.1-1", "2.9.2", "2.10.0-M7"),
 //      (excludeFilter in format) <<= (excludeFilter) (_ || "*Spec.scala"),
       libraryDependencies ++= compilerPlugins,
       artifact in (Compile, packageBin) ~= { (art: Artifact) =>
