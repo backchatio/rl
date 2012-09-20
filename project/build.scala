@@ -77,6 +77,7 @@ object RlSettings {
         case _ => "org.specs2" %% "specs2" % "1.12" % "test"
       },
       libraryDependencies += "junit" % "junit" % "4.10" % "test",
+      crossVersion := CrossVersion.full,
       resolvers ++= Seq(
         "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases",
         "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
