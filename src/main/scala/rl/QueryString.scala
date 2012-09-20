@@ -102,5 +102,5 @@ case class MapQueryString(initialValues: Seq[(String, Seq[String])], rawValue: S
     case (k, v) ⇒ v.map(s ⇒ "%s=%s".format(k.urlEncode, s.urlEncode)).mkString("&")
   } mkString "&"
 
-  type Value = immutable.Map[String, _ <: Seq[String]]
+  type Value = immutable.Map[String, Seq[String]]
 }
