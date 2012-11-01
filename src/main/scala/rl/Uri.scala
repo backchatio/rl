@@ -129,7 +129,7 @@ object Uri {
       case e: NullPointerException ⇒ {
         FailedUri(e, originalUri getOrElse u.toString)
       }
-      case e ⇒ {
+      case e: Throwable ⇒ {
         FailedUri(e, originalUri getOrElse u.toString)
       }
     }
