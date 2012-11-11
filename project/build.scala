@@ -71,7 +71,7 @@ object RlSettings {
         "-Xcheckinit",
         "-encoding", "utf8"),
       libraryDependencies <+= (scalaVersion) {
-        case "2.10.0-RC1" => "org.specs2" % "specs2_2.10.0-RC1" % "1.12.2" % "test"
+        case "2.10.0-RC2" => "org.specs2" % "specs2_2.10.0-RC2" % "1.12.2" % "test"
         case "2.9.0-1" => "org.specs2" %% "specs2" % "1.5" % "test"
         case "2.9.0" => "org.specs2" % "specs2_2.9.0-1" % "1.5" % "test"
         case _ => "org.specs2" %% "specs2" % "1.12" % "test"
@@ -83,7 +83,7 @@ object RlSettings {
         "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
         "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/"
       ),
-      crossScalaVersions := Seq("2.9.1", "2.9.0-1", "2.9.0", "2.9.1-1", "2.9.2", "2.10.0-RC1"),
+      crossScalaVersions := Seq("2.9.1", "2.9.0-1", "2.9.0", "2.9.1-1", "2.9.2", "2.10.0-RC2"),
 //      (excludeFilter in format) <<= (excludeFilter) (_ || "*Spec.scala"),
       libraryDependencies ++= compilerPlugins,
       artifact in (Compile, packageBin) ~= { (art: Artifact) =>
