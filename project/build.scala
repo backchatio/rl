@@ -8,31 +8,31 @@ import scala.xml._
 // Shell prompt which show the current project, git branch and build version
 // git magic from Daniel Sobral, adapted by Ivan Porto Carrero to also work with git flow branches
 object ShellPrompt {
- 
+
   object devnull extends ProcessLogger {
     def info (s: => String) {}
     def error (s: => String) { }
     def buffer[T] (f: => T): T = f
   }
-  
+
   val current = """\*\s+([^\s]+)""".r
-  
+
   def gitBranches = ("git branch --no-color" lines_! devnull mkString)
-  
-  val buildShellPrompt = { 
+
+  val buildShellPrompt = {
     (state: State) => {
       val currBranch = current findFirstMatchIn gitBranches map (_ group(1)) getOrElse "-"
       val currProject = Project.extract (state).currentProject.id
       "%s:%s:%s> ".format (currBranch, currProject, RlSettings.buildVersion)
     }
   }
- 
+
 }
 
 object RlSettings {
   val buildOrganization = "io.backchat.rl"
   val buildScalaVersion = "2.9.2"
-  val buildVersion      = "0.3.2"
+  val buildVersion      = "0.3.3"
 //
 //  lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(
 //     preferences in Compile := formattingPreferences,
@@ -171,8 +171,7 @@ object RlBuild extends Build {
     rl.downloadDomainFile <<= (rl.domainFile, rl.domainFileUrl, streams) map (_ #< _ ! _.log),
     (compile in Compile) <<= (compile in Compile) dependsOn rl.downloadDomainFile,
     description := "An RFC-3986 compliant URI library."))
-  
+
 }
 
 // vim: set ts=2 sw=2 et:
-

@@ -34,7 +34,7 @@ case object EmptyPath extends EmptyUriPath {
 
   val isRelative: Boolean = true
 
-  val uriPart = ""
+  val uriPart = "/"
 }
 
 case class RelativePath(segments: GenSeq[String]) extends UriPath {
